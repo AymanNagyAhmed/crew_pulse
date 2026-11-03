@@ -2,24 +2,25 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Job } from 'bullmq';
+import { AttendanceStore } from '../modules/attendance/attendance.store.js';
 import { IdempotencyService } from '../modules/queues/idempotency.service.js';
 import { ATTENDANCE_LOG_QUEUE } from '../modules/queues/queue.constants.js';
 import type { AttendanceLogJob } from './attendance-log.job.js';
 
 export type AttendanceProcessResult = {
-  status: 'written' | 'duplicate';
+  status: 'written' | 'duplicate' | 'cooldown';
   idempotencyKey: string;
+  attendanceId?: string;
 };
 
 @Processor(ATTENDANCE_LOG_QUEUE)
 export class AttendanceLogProcessor extends WorkerHost {
   private readonly logger = new Logger(AttendanceLogProcessor.name);
-  /** In-memory store until Postgres persistence lands in 4.2 */
-  private readonly rows = new Map<string, AttendanceLogJob>();
 
   constructor(
     private readonly idempotency: IdempotencyService,
     private readonly config: ConfigService,
+    private readonly attendanceStore: AttendanceStore,
   ) {
     super();
   }
@@ -28,12 +29,12 @@ export class AttendanceLogProcessor extends WorkerHost {
     job: Job<AttendanceLogJob>,
   ): Promise<AttendanceProcessResult> {
     const payload = job.data;
-    const ttl =
+    const cooldown =
       this.config.get<number>('ATTENDANCE_COOLDOWN_SECONDS') ?? 60;
     const claimed = await this.idempotency.tryClaim(
       ATTENDANCE_LOG_QUEUE,
       payload.idempotencyKey,
-      Math.max(ttl * 2, 60),
+      Math.max(cooldown * 2, 60),
     );
 
     if (!claimed) {
@@ -41,15 +42,25 @@ export class AttendanceLogProcessor extends WorkerHost {
       return { status: 'duplicate', idempotencyKey: payload.idempotencyKey };
     }
 
-    this.rows.set(payload.idempotencyKey, payload);
-    this.logger.log(
-      `attendance written worker=${payload.workerId} venue=${payload.venueId}`,
-    );
-    return { status: 'written', idempotencyKey: payload.idempotencyKey };
-  }
+    const result = this.attendanceStore.persist(payload, cooldown);
+    if (result.status !== 'written') {
+      this.logger.debug(
+        `attendance ${result.status} key=${payload.idempotencyKey}`,
+      );
+      return {
+        status: result.status,
+        idempotencyKey: payload.idempotencyKey,
+        attendanceId: result.record.id,
+      };
+    }
 
-  /** Test helper — not used in production path */
-  getStored(key: string): AttendanceLogJob | undefined {
-    return this.rows.get(key);
+    this.logger.log(
+      `attendance written id=${result.record.id} worker=${payload.workerId}`,
+    );
+    return {
+      status: 'written',
+      idempotencyKey: payload.idempotencyKey,
+      attendanceId: result.record.id,
+    };
   }
 }

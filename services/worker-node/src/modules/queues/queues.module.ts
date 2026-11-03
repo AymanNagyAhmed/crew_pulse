@@ -3,11 +3,13 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AttendanceLogProcessor } from '../../processors/attendance-log.processor.js';
 import { WebhookProcessor } from '../../processors/webhook.processor.js';
+import { AttendanceModule } from '../attendance/attendance.module.js';
 import { IdempotencyService } from './idempotency.service.js';
 import { ATTENDANCE_LOG_QUEUE, WEBHOOK_QUEUE } from './queue.constants.js';
 
 @Module({
   imports: [
+    AttendanceModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -21,6 +23,6 @@ import { ATTENDANCE_LOG_QUEUE, WEBHOOK_QUEUE } from './queue.constants.js';
     ),
   ],
   providers: [IdempotencyService, AttendanceLogProcessor, WebhookProcessor],
-  exports: [BullModule, IdempotencyService],
+  exports: [BullModule, IdempotencyService, AttendanceModule],
 })
 export class QueuesModule {}
