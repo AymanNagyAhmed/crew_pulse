@@ -1,0 +1,44 @@
+# Main plan step → branch, commit, PR onto `dev`
+
+Applies when a numbered step in `docs/main_plan.md` reaches its **Done when** criteria (e.g. `3.1`, `3.2`, `5.1`). Challenge work uses `challenge-pr-workflow.mdc` instead.
+
+## After finishing each step
+
+Do this immediately (do not pile multiple unfinished steps on `dev`):
+
+1. **Branch** from up-to-date local `dev`, named `{step-id}-{short-kebab-title}` from the plan heading:
+
+   | Step | Branch example |
+   |------|----------------|
+   | 3.1 Scaffold FastAPI layout | `3.1-scaffold-fastapi-layout` |
+   | 3.2 Embedding/match API stubs | `3.2-embedding-match-api-stubs` |
+   | 4.1 Scaffold NestJS worker | `4.1-scaffold-nestjs-worker` |
+
+   ```bash
+   git fetch origin && git checkout dev && git pull origin dev
+   git checkout -b <step-id>-<short-kebab-title>
+   ```
+
+2. **Commit** only that step’s changes. Message focuses on why. Strip Cursor/AI attribution (`no-agent-attribution.mdc`).
+
+3. **Push** the branch and **open a PR with base `dev`** (not `main`):
+
+   ```bash
+   git push -u origin HEAD
+   bash ~/.cursor/skills/no-cursor-attribution/scripts/strip-pr-attribution.sh --in-place /tmp/pr-body.md
+   # or: bash .cursor/skills/no-cursor-attribution/scripts/strip-pr-attribution.sh --in-place /tmp/pr-body.md
+   gh pr create --base dev --title "<step-id>: <short why>" --body-file /tmp/pr-body.md
+   gh pr view --json body -q .body   # must show no Cursor attribution
+   ```
+
+4. If `origin/dev` is behind local `dev`, **push `dev` first** so the PR diff is only the step.
+
+## Stacked steps
+
+If step N+1 is ready before N’s PR merges: branch N+1 from N’s branch tip; open PR N+1 with `--base dev` (GitHub will show N+N+1 until N merges, then only N+1). Prefer merging N before starting N+1 when practical.
+
+## Rules
+
+- One main-plan step per branch / PR.
+- Do not merge step work straight to `dev` without a PR unless the user explicitly says so.
+- Targeted tests for the step (`targeted-tests.mdc`); Postman sync when APIs change (`postman-sync.mdc`).
