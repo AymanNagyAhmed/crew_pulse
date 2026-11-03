@@ -1,0 +1,57 @@
+# Secrets & local env
+.env
+.env.*
+!.env.example
+infrastructure/env/.env
+infrastructure/env/.env.local
+**/dev.local.*
+
+# Node
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.npm
+.eslintcache
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+/env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ML / vision caches (keep weights out of git)
+**/.deepface/
+**/weights/
+**/models/weights/
+*.onnx
+*.pt
+*.pth
+*.h5
+*.caffemodel
+
+# Docker / compose overrides
+docker-compose.override.yml
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs & temp
+*.log
+tmp/
+temp/
+.cache/
