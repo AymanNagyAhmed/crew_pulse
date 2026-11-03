@@ -5,13 +5,12 @@ alwaysApply: true
 
 # Always state the next step
 
-Until the user can run the local stack with documented commands (`docker compose` from `infrastructure/` + api-gateway health + vision-engine health) and that milestone is ticked in `docs/plan.md`, every assistant reply must end with:
+Until the user can run the local stack with documented commands (`docker compose` from `infrastructure/` + api-gateway health + vision-engine health) and that milestone is ticked in `docs/main_plan.md`, every assistant reply must end with:
 
 ```text
-Next step: <step id> — <title from docs/plan.md>
+Next step: <step id> — <title from docs/main_plan.md>
 ```
 
-- Use the real next incomplete step from `docs/plan.md`, not a vague phase name.
-- If `docs/plan.md` is empty or has no checklist yet, the next step is writing / scaffolding that plan (and say so).
+- Use the real next incomplete step from `docs/main_plan.md`, not a vague phase name.
 - If blocked (e.g. missing env secret, Docker not available), say that under Next step and name what the user must provide.
 - After local run is fully done per the plan, stop adding this footer unless the user asks to keep it.

@@ -16,7 +16,7 @@ crewpulse/
 │   ├── vision-engine/     # FastAPI Python: face detection & embeddings
 │   └── worker-node/       # Background jobs (attendance logs, webhooks)
 ├── infrastructure/        # Docker Compose, DB migrations, env configs
-└── docs/                  # Architecture, API specs, build plan (docs/plan.md)
+└── docs/                  # Architecture, API specs, build plan (docs/main_plan.md)
 ```
 
 Shell shortcuts used in rules: `$API` = `services/api-gateway`, `$VISION` = `services/vision-engine`, `$WORKER` = `services/worker-node`, `$INFRA` = `infrastructure`.

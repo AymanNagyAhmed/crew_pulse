@@ -9,7 +9,7 @@ alwaysApply: true
 
 Triggers: "I will continue in the next session", "continue in next agent", "let's stop here", "hand off", or similar.
 
-1. Update the **Progress checklist** at the top of `docs/plan.md` (tick only phases whose "Done when" checks passed).
+1. Update the **Progress checklist** at the top of `docs/main_plan.md` (tick only phases whose "Done when" checks passed).
 2. Get the step id of the next step to do (e.g. `0.1`, or `1.2` for step 2 inside phase 1) and the local time:
 
 ```bash
@@ -23,7 +23,7 @@ date +%Y-%m-%d_%H-%M
 # Next step: <step id> - <step title>
 
 Created: <YYYY-MM-DD HH:MM> (UTC+4)
-Plan: docs/plan.md
+Plan: docs/main_plan.md
 
 ## Done in this session
 - <phases / steps completed, with the checks that passed>

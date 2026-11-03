@@ -38,4 +38,4 @@ python3 --version   # prefer 3.11+
 - Async routes where I/O-bound; sync CPU vision work in thread/process pools so the event loop stays responsive.
 - Pydantic models for request/response; OpenAPI from FastAPI defaults.
 - OpenCV / DeepFace / RetinaFace stay inside this service only.
-- Health endpoint for Compose readiness; accept image bytes or object-store references, return match scores / worker ids — never raw embedding vectors to untrusted clients unless the plan explicitly requires it.
+- Health endpoint for Compose readiness; accept image bytes or object-store references, return match scores / worker ids — never raw embedding vectors to untrusted clients unless `docs/main_plan.md` explicitly requires it.
