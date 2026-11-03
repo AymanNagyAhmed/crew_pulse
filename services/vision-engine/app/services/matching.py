@@ -1,13 +1,13 @@
-"""1:N match stubs — gallery search stays scoped; no raw embeddings in responses."""
+"""1:N match — real detect + stub gallery scores until vector search (C4)."""
 
 from __future__ import annotations
 
 from typing import Literal
 
+from app.core.settings import get_settings
 from app.schemas.vision import DetectRequest, MatchCandidate, MatchRequest, MatchResponse
-from app.services.detection import STUB_MODEL_VERSION, DetectionService
+from app.services.detection import DetectionService
 
-# Align with future api-gateway attendance policy defaults.
 STUB_MATCH_THRESHOLD = 0.75
 
 MatchDecision = Literal["matched", "no_match", "needs_review"]
@@ -25,6 +25,17 @@ class MatchingService:
             )
         )
         primary = detect.faces[0] if detect.faces else None
+
+        if primary is None:
+            return MatchResponse(
+                decision="no_match",
+                best_score=0.0,
+                threshold=STUB_MATCH_THRESHOLD,
+                candidates=[],
+                face=None,
+                model_version=detect.model_version,
+                stub=detect.stub,
+            )
 
         worker_ids = payload.candidate_worker_ids or ["worker_stub_001"]
         candidates = [
@@ -47,6 +58,6 @@ class MatchingService:
             threshold=STUB_MATCH_THRESHOLD,
             candidates=candidates,
             face=primary,
-            model_version=STUB_MODEL_VERSION,
-            stub=True,
+            model_version=detect.model_version,
+            stub=detect.stub or get_settings().vision_stub,
         )

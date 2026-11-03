@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -13,8 +14,20 @@ class Settings(BaseSettings):
     app_name: str = "crewpulse-vision-engine"
     host: str = "0.0.0.0"
     port: int = 8000
-    # Models load in 3.3; readiness can stay green until then.
-    models_ready: bool = True
+
+    # When true, skip DeepFace and return deterministic stubs (CI without weights).
+    vision_stub: bool = False
+
+    detector_backend: str = "retinaface"
+    embedding_model: str = "Facenet512"
+    # DeepFace creates `<DEEPFACE_HOME>/.deepface/weights` (default home dir).
+    deepface_home: str = str(Path.home())
+
+    face_min_size_px: int = 80
+    # Normalized blur score 0 sharp → 1 blurry; reject above this.
+    face_max_blur: float = 0.65
+    face_min_luminance: float = 0.15
+    face_max_luminance: float = 0.92
 
 
 @lru_cache

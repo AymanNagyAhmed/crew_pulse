@@ -1,7 +1,8 @@
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 
-from app.core.settings import Settings, get_settings
+from app.core import runtime
+from app.core.settings import get_settings
 from app.schemas.health import HealthResponse
 
 router = APIRouter(tags=["health"])
@@ -24,8 +25,8 @@ def health() -> HealthResponse:
     responses={503: {"model": HealthResponse}},
 )
 def ready() -> HealthResponse | JSONResponse:
-    settings: Settings = get_settings()
-    if not settings.models_ready:
+    settings = get_settings()
+    if not runtime.models_ready:
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content=HealthResponse(

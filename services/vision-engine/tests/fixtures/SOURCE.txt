@@ -1,0 +1,2 @@
+sample_face.jpg is a resized copy of DeepFace's MIT-licensed unit fixture:
+https://github.com/serengil/deepface/blob/master/tests/unit/dataset/img1.jpg
