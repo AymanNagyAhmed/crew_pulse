@@ -1,15 +1,26 @@
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
+import logging
 
 from fastapi import FastAPI
 
 from app.api import api_router
 from app.core.settings import get_settings
+from app.services.detection import warm_models
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    # Model weight load deferred to phase 3.3.
+    from app.core import runtime
+
+    settings = get_settings()
+    try:
+        warm_models(settings)
+    except Exception:  # noqa: BLE001
+        logger.exception("model warm-up failed; /ready will stay not_ready")
+        runtime.models_ready = False
     yield
 
 

@@ -16,6 +16,6 @@ Gateway has no HTTP client module yet; this is the contract it should call when 
 - For match, always pass `venue_id` + `shift_id`; prefer `candidate_worker_ids` once the shift roster is known (cuts N and false matches).
 - Treat `decision` as advisory input to attendance policy (`matched` / `no_match` / `needs_review`), not a final payroll write.
 - **Never** expect or log raw embedding vectors from these responses (`embedding_dim` / scores only).
-- `stub: true` until phase 3.3 real models; do not special-case beyond metrics.
+- `stub: false` when RetinaFace/Facenet512 is live; `VISION_STUB=true` forces stubs. Do not special-case beyond metrics.
 
 OpenAPI: `{VISION_ENGINE_URL}/docs` or `/openapi.json` (`operationId`s `vision.detect`, `vision.match`).
