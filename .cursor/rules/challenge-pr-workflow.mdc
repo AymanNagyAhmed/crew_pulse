@@ -1,0 +1,44 @@
+# Challenge branch, commit, and PR workflow
+
+Applies when implementing a step from `docs/plan_to_cover_challenges.md` (one challenge from `docs/challenges/`).
+
+## Gate
+
+Do not start challenge work until `docs/main_plan.md` phase **5** (launch the app / local run) is complete and ticked.
+
+## After covering a challenge
+
+When the challenge’s **Done when** criteria pass, in this order:
+
+1. **Branch** from up-to-date `dev`, named exactly after the challenge file **without** `.md`:
+
+   | Challenge file | Branch |
+   |----------------|--------|
+   | `1-high-throughput-shift-spikes.md` | `1-high-throughput-shift-spikes` |
+   | `2-low-light-and-harsh-illumination.md` | `2-low-light-and-harsh-illumination` |
+   | … | same stem for 3–12 |
+
+   ```bash
+   git fetch origin && git checkout dev && git pull origin dev
+   git checkout -b <challenge-file-stem>
+   ```
+
+2. **Commit** only that challenge’s changes (user must ask to commit, or confirm in-session). Message focuses on why the mitigation exists. No Cursor/AI attribution (`no-agent-attribution.mdc`); run strip script after commit.
+
+3. **Push** the branch and **open a PR into `dev`** (not `main`):
+
+   ```bash
+   git push -u origin HEAD
+   # PR body via file; strip attribution before create
+   bash .cursor/skills/no-cursor-attribution/scripts/strip-pr-attribution.sh --in-place /tmp/pr-body.md
+   gh pr create --base dev --title "<stem>: <short why>" --body-file /tmp/pr-body.md
+   ```
+
+4. Tick the challenge in `docs/plan_to_cover_challenges.md` Progress checklist (same PR or follow-up on the branch).
+
+## Rules
+
+- One challenge per branch / PR.
+- Do not merge challenge work straight to `dev` without a PR unless the user explicitly says so.
+- Postman / OpenAPI updates stay in the same PR when the challenge changes API contracts (`postman-sync.mdc`).
+- Targeted tests only for touched features (`targeted-tests.mdc`).

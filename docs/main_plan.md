@@ -1,6 +1,6 @@
 # CrewPulse build plan
 
-Canonical implementation plan. Challenges: `docs/challenges/`. Architecture: README + `.cursor/rules/crewpulse-architecture.mdc`.
+Canonical implementation plan. Challenges: `docs/challenges/` → cover via `docs/plan_to_cover_challenges.md`. Architecture: README + `.cursor/rules/crewpulse-architecture.mdc`.
 
 ## Progress checklist
 
@@ -9,9 +9,10 @@ Canonical implementation plan. Challenges: `docs/challenges/`. Architecture: REA
 - [x] **2** api-gateway skeleton (NestJS, `v1` prefix, health, response envelope)
 - [ ] **3** vision-engine skeleton (FastAPI, health, detect/embed stub)
 - [ ] **4** worker-node skeleton (NestJS/BullMQ consumer, health)
-- [ ] **5** Local run (compose up + all health checks documented)
+- [ ] **5** Launch the app / local run (compose up + all health checks documented) — **required before any challenge**
+- [ ] **6** Cover challenges (`docs/plan_to_cover_challenges.md`; one branch/PR per challenge onto `dev`)
 
-Stop adding the “Next step” reply footer after phase **5** “Done when” passes.
+Stop adding the “Next step” reply footer after phase **5** “Done when” passes. Do not start phase **6** until **5** is ticked.
 
 ---
 
@@ -150,7 +151,7 @@ Write verified attendance rows; cooldown / idempotency keys (challenge 11).
 
 ---
 
-## Phase 5 — Local run integration
+## Phase 5 — Launch the app / local run integration
 
 ### 5.1 Compose service images
 
@@ -162,14 +163,22 @@ Dockerfiles for api-gateway, vision-engine, worker-node; add to Compose with dep
 
 README section: `make up`, health curls for gateway + vision, one stub check-in request.
 
-**Done when:** another engineer can follow README and see three healthy services; phase **5** checklist ticked.
+**Done when:** another engineer can follow README and see three healthy services; phase **5** checklist ticked. **Do not begin challenge work until this passes.**
 
 ---
 
-## Deferred (after local run)
+## Phase 6 — Cover challenges
 
-- Kafka KRaft (if BullMQ insufficient for multi-venue fan-out)
-- PAD / liveness (challenge 3), fairness eval harness (challenge 8)
+Implement mitigations one challenge at a time per `docs/plan_to_cover_challenges.md`. After each challenge: branch named after the challenge file stem, commit, push, PR into `dev` (see `.cursor/rules/challenge-pr-workflow.mdc`).
+
+**Done when:** all C1–C12 checkboxes in `docs/plan_to_cover_challenges.md` are ticked and merged to `dev`.
+
+---
+
+## Deferred (after local run; tracked in challenge plan)
+
+- Kafka KRaft (if BullMQ insufficient for multi-venue fan-out) — may land under C1/C9/C10
+- Challenge mitigations C1–C12: `docs/plan_to_cover_challenges.md` (PR workflow: `.cursor/rules/challenge-pr-workflow.mdc`)
 - Postman collection sync (`postman-sync.mdc`) once real attendance routes ship
 - Nginx TLS and production digests
 
