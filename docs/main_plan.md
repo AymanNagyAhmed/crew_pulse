@@ -2,6 +2,8 @@
 
 Canonical implementation plan. Challenges: `docs/challenges/` → cover via `docs/plan_to_cover_challenges.md`. Architecture: README + `.cursor/rules/crewpulse-architecture.mdc`.
 
+After each numbered step’s **Done when** passes: branch → commit → push → PR into `dev` (`.cursor/rules/main-plan-step-pr-workflow.mdc`).
+
 ## Progress checklist
 
 - [x] **0** Foundations (layout, gitignore, env, Makefile)
