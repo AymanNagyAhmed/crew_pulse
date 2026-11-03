@@ -1,0 +1,33 @@
+---
+description: Regenerate the Postman collection and environment whenever an endpoint or environment variable is added or changed
+alwaysApply: true
+---
+
+# Keep the Postman collection in sync
+
+Applies once `services/api-gateway/postman/` exists. Before that, write "Postman: add <operationIds>" under open issues in the handoff instead.
+
+## Triggers
+
+- An endpoint is added, removed or changed: route, method, DTO / query / params, response, auth (`@Public`, Bearer), headers (`Idempotency-Key`, venue/shift headers), `operationId`, tag.
+- An environment variable is added, renamed or removed in `.env.example` that a request or script needs (base URL, test users, venue ids, secrets).
+
+## Steps, in the same branch and commit as the API change
+
+1. OpenAPI metadata on changed routes: `@ApiTags`, `@ApiOperation({ operationId: '<context>.<action>', summary })`, `@ApiProperty({ example })`, `@ApiBearerAuth()` or `@Public()`, `@ApiHeader` for custom headers.
+2. Request scripts: if the route returns an id or token later requests use, add or update `postman/scripts/<operationId>.test.js` (`pm.environment.set`). Postman sandbox only: `pm`, `CryptoJS`, no Node APIs.
+3. Environment variables: add to `postman/environments/dev.postman_environment.json` (secrets as `type: "secret"` with empty value) and fill via `scripts/postman/build-env.ts` from `.env`. Never commit real secrets.
+4. Regenerate and check (generator reads `/v1/docs-json`, so the api-gateway must be running):
+
+```bash
+cd services/api-gateway && source ~/.nvm/nvm.sh && nvm use 24.22.2 && \
+npm run postman:build && npm run postman:check && npm run postman:env && \
+npm run postman:test && \
+git status --short postman/    # dev.local.* must not be listed
+```
+
+5. Commit regenerated `postman/` files with the API change. A second `postman:build` without API changes must give no diff.
+
+## Reporting
+
+Name the added or changed `operationId`s and environment variables, and say whether Newman passed.

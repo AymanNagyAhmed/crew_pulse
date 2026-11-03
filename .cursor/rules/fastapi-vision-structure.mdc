@@ -1,0 +1,26 @@
+---
+description: FastAPI vision-engine layout - routers, schemas, services, models kept out of Nest
+globs: services/vision-engine/**/*.py
+alwaysApply: false
+---
+
+# vision-engine (FastAPI) structure
+
+```text
+services/vision-engine/
+├── app/
+│   ├── main.py              # FastAPI app, lifespan, health
+│   ├── api/                 # routers only (thin)
+│   ├── schemas/             # Pydantic request/response models
+│   ├── services/            # detection, embedding, matching
+│   ├── core/                # settings, logging
+│   └── workers/             # optional CPU pool helpers
+├── tests/
+├── requirements.txt         # or pyproject + lock
+└── Dockerfile
+```
+
+- Routers call services; no OpenCV/DeepFace calls inside route functions beyond delegating.
+- Settings via env / pydantic-settings; never commit model API keys or raw biometric samples.
+- Health: `/health` (liveness) and readiness that fails if model weights failed to load.
+- Return worker match metadata and scores; do not log full embedding vectors.

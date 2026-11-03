@@ -1,0 +1,39 @@
+---
+description: Run only the tests related to the files or feature changed in a step, not the whole suite
+alwaysApply: true
+---
+
+# Run targeted tests, not the whole suite
+
+After each step, run only the tests for the files or feature you created or changed. Do not run the full suite unless the user asks.
+
+Activate Node first for Nest services (see `node-version.mdc`).
+
+## NestJS (`api-gateway`, `worker-node`)
+
+- Changed `src/modules/<feature>/...`: that feature's unit specs and its e2e spec.
+- Changed shared `src/common/...`, `src/config/...`: also specs of importers (`rg -l "<file-stem>" src test`).
+- Changed Prisma/SQL migrations under `infrastructure/` or the service: e2e for the owning module.
+- New test files: run them.
+
+```bash
+cd services/api-gateway && source ~/.nvm/nvm.sh && nvm use 24.22.2 && \
+npx vitest run src/modules/attendance && \
+npm run test:e2e -- attendance
+```
+
+## FastAPI (`vision-engine`)
+
+```bash
+cd services/vision-engine && \
+python -m pytest tests/test_<module>.py -q
+```
+
+## Other checks
+
+- Lint only changed files (Nest: `npx oxlint` / `eslint` as configured; Python: `ruff` / `mypy` if present).
+- Keep cheap project checks the plan lists (`npm run build`, compose config validate); they are not test suites.
+
+## Reporting
+
+Say which tests you ran and that the full suite was not run, e.g. "Ran attendance unit (12) and e2e (4) tests; full suite not run."

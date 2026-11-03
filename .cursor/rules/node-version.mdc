@@ -1,0 +1,16 @@
+---
+description: Always switch to Node 24.22.2 via nvm before running npm/npx/node commands
+alwaysApply: true
+---
+
+# Node version
+
+Before running any `npm`, `npx`, `pnpm`, `yarn`, or `node` command, activate Node 24.22.2 with nvm in the same shell command:
+
+```bash
+source ~/.nvm/nvm.sh && nvm use 24.22.2 && npm install
+```
+
+- Chain with `&&` so the version switch applies to the command (each shell call may start fresh).
+- If 24.22.2 is not installed, run `nvm install 24.22.2` first.
+- Never run npm commands under a different Node version.

@@ -1,0 +1,41 @@
+---
+description: Latest stable NestJS (api-gateway / worker-node) and FastAPI (vision-engine); follow official docs
+alwaysApply: true
+---
+
+# NestJS + FastAPI stack
+
+Use the **latest stable** releases and official docs:
+
+- NestJS: [docs.nestjs.com](https://docs.nestjs.com/)
+- FastAPI: [fastapi.tiangolo.com](https://fastapi.tiangolo.com/)
+- React only if a frontend app is added later: [react.dev](https://react.dev/reference/react)
+
+## Versions
+
+Never hardcode versions from memory. Check current stable first:
+
+```bash
+source ~/.nvm/nvm.sh && nvm use 24.22.2 && npm view @nestjs/core version
+# vision-engine (when scaffolding Python)
+python3 --version   # prefer 3.11+
+```
+
+- Scaffold Nest: `npx @nestjs/cli@latest new <service>` under `services/`.
+- Scaffold FastAPI under `services/vision-engine` with a pinned `requirements.txt` / lockfile (e.g. `uv` or `pip-tools`), not ad-hoc global installs.
+- No `alpha`, `beta`, `rc`, `next`, or `canary`. Keep all `@nestjs/*` on the same major.
+
+## NestJS (`api-gateway`, `worker-node`)
+
+- Feature modules + DI; DTOs + `class-validator` + global `ValidationPipe`.
+- Config via `@nestjs/config`; never hardcoded secrets.
+- Queues: BullMQ (Redis) and/or Kafka for attendance / webhook jobs — handlers stay thin.
+- Call `vision-engine` via an injected HTTP/gRPC client module, not by spawning Python.
+- TypeScript strict mode.
+
+## FastAPI (`vision-engine`)
+
+- Async routes where I/O-bound; sync CPU vision work in thread/process pools so the event loop stays responsive.
+- Pydantic models for request/response; OpenAPI from FastAPI defaults.
+- OpenCV / DeepFace / RetinaFace stay inside this service only.
+- Health endpoint for Compose readiness; accept image bytes or object-store references, return match scores / worker ids — never raw embedding vectors to untrusted clients unless the plan explicitly requires it.

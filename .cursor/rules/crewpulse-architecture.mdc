@@ -1,0 +1,36 @@
+---
+description: CrewPulse product context, service layout, and tech stack from the README
+alwaysApply: true
+---
+
+# CrewPulse project context
+
+**CrewPulse** is a workforce management and biometric tracking platform for catering, events, and hospitality. Contactless facial recognition, multi-venue shift sync, async check-in processing, and audit-ready attendance logs.
+
+## Layout
+
+```text
+crewpulse/
+├── services/
+│   ├── api-gateway/       # NestJS core API & business logic
+│   ├── vision-engine/     # FastAPI Python: face detection & embeddings
+│   └── worker-node/       # Background jobs (attendance logs, webhooks)
+├── infrastructure/        # Docker Compose, DB migrations, env configs
+└── docs/                  # Architecture, API specs, build plan (docs/plan.md)
+```
+
+Shell shortcuts used in rules: `$API` = `services/api-gateway`, `$VISION` = `services/vision-engine`, `$WORKER` = `services/worker-node`, `$INFRA` = `infrastructure`.
+
+## Stack
+
+- **Vision:** Python, OpenCV, DeepFace / RetinaFace, NumPy
+- **API:** Node.js / NestJS, TypeScript; vision via FastAPI microservice
+- **Data / broker:** PostgreSQL (vector indexing), Redis, BullMQ / Kafka KRaft
+- **Infra:** Docker, Docker Compose, Nginx
+
+## Boundaries
+
+- Face detection and embedding live only in `vision-engine`; NestJS calls it over HTTP/gRPC — never import OpenCV/DeepFace into Node.
+- Domain APIs, auth, venues, shifts, and attendance orchestration live in `api-gateway`.
+- Long-running or peak-queue work (log writes, webhooks, embedding batch) goes to `worker-node` via Redis/BullMQ or Kafka — not inline in request handlers.
+- Biometric embeddings and PII: treat as sensitive; no embeddings in logs or client responses unless the API contract explicitly requires a non-reversible identifier.

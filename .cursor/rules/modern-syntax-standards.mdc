@@ -1,0 +1,25 @@
+---
+description: Enforce modern syntax and standard libraries for TypeScript, JavaScript, and Python (vision-engine)
+globs: "**/*.ts,**/*.tsx,**/*.js,**/*.jsx,**/*.py"
+alwaysApply: false
+---
+
+# Modern code standards
+
+When writing or refactoring code, use latest stable language features and built-ins. Avoid legacy patterns and polyfills for native features.
+
+## TypeScript & JavaScript (NestJS services)
+
+- Prefer `import type` for type-only imports.
+- Prefer `satisfies` over widening `as` when validating structure.
+- Avoid `enum` unless required; prefer as-const objects or union types.
+- Use `?.`, `??`, `??=` / `&&=` / `||=`, and `Object.hasOwn()`.
+- Prefer native `async/await` over callback or deep `.then` chains.
+
+## Python 3.11+ (vision-engine)
+
+- Built-in generics: `list[str]`, `dict[str, int]` — not `typing.List` / `Dict`.
+- Unions: `str | None` — not `Optional[str]` / `Union[...]`.
+- Prefer `match` / `case` for complex branching.
+- Prefer FastAPI / Pydantic v2 patterns (`model_config`, `Annotated`) over legacy v1 APIs.
+- Keep NumPy/OpenCV arrays typed clearly at service boundaries (bytes in, structured results out).

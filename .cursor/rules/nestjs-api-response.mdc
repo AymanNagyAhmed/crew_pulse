@@ -1,0 +1,92 @@
+---
+description: NestJS apps use the "v1" global API prefix and one custom response envelope for success, fail and error
+globs: services/api-gateway/**/*.ts,services/worker-node/**/*.ts
+alwaysApply: false
+---
+
+# NestJS API prefix and response envelope
+
+## Prefix
+
+Every NestJS HTTP app sets the global prefix `v1` in `main.ts`, so routes are `/v1/...`. Never hardcode `v1` in `@Controller()` paths.
+
+```typescript
+const app = await NestFactory.create(AppModule, { rawBody: true });
+app.setGlobalPrefix('v1');
+app.useGlobalInterceptors(new ResponseInterceptor());
+app.useGlobalFilters(new AllExceptionsFilter());
+```
+
+## Envelope
+
+```typescript
+export interface ApiMeta { requestId: string }
+
+export interface ApiSuccess<T> {
+  success: true;
+  statusCode: number;
+  message: string;
+  data: T;
+  meta: ApiMeta;
+}
+
+export interface ApiFailure {
+  success: false;
+  statusCode: number;
+  error: {
+    code: string;                  // UPPER_SNAKE_CASE
+    message: string;
+    details?: { field: string; issue: string }[];
+  };
+  meta: ApiMeta;
+}
+
+export type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
+```
+
+Success example (check-in):
+
+```json
+{
+  "success": true,
+  "statusCode": 201,
+  "message": "Check-in recorded successfully",
+  "data": {
+    "attendanceId": "att_9f8e7d6c5b4a",
+    "workerId": "wrk_12ab",
+    "venueId": "ven_34cd",
+    "shiftId": "shf_56ef",
+    "matchedAt": "2026-11-03T17:00:00Z",
+    "confidence": 0.97
+  },
+  "meta": { "requestId": "req_abc123xyz789" }
+}
+```
+
+Fail example (4xx):
+
+```json
+{
+  "success": false,
+  "statusCode": 404,
+  "error": {
+    "code": "FACE_NOT_MATCHED",
+    "message": "No enrolled worker matched the captured face above the confidence threshold.",
+    "details": [
+      { "field": "confidence", "issue": "Best score 0.42 is below threshold 0.85" }
+    ]
+  },
+  "meta": { "requestId": "req_abc123xyz789" }
+}
+```
+
+Error (5xx): fixed generic message; log real error + stack with `requestId`; never return stack traces, SQL, or embedding payloads.
+
+## Implementation
+
+- `ResponseInterceptor` wraps handler returns into `ApiSuccess`; use `@ResponseMessage('...')`, default `"OK"`.
+- `statusCode` in the body equals the HTTP status.
+- `AllExceptionsFilter`: `HttpException` < 500 → `ApiFailure`; `ValidationPipe` → `details`; domain errors via `DomainException(code, message, statusCode, details?)`; else 500 `INTERNAL_SERVER_ERROR`.
+- `meta.requestId`: from `x-request-id` or generate `req_<random>`; echo in response header and logs.
+- Document envelopes in Swagger (`@nestjs/swagger`).
+- Microservice / queue handlers that return RPC-style results use the same envelope shape via an `RpcExceptionFilter` when applicable.

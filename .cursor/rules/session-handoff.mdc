@@ -1,0 +1,58 @@
+---
+description: Write a handoff file when the user will continue in another session or agent, and resume from it at the start of a new session
+alwaysApply: true
+---
+
+# Session handoff
+
+## When the user says they will continue later
+
+Triggers: "I will continue in the next session", "continue in next agent", "let's stop here", "hand off", or similar.
+
+1. Update the **Progress checklist** at the top of `docs/plan.md` (tick only phases whose "Done when" checks passed).
+2. Get the step id of the next step to do (e.g. `0.1`, or `1.2` for step 2 inside phase 1) and the local time:
+
+```bash
+date +%Y-%m-%d_%H-%M
+```
+
+3. Create `next_step_<step>_<YYYY-MM-DD_HH-MM>.md` in the workspace root, e.g. `next_step_1.2_2026-11-03_21-00.md`. Never overwrite an older handoff file.
+4. Use this template, filled with facts from the session (no guesses):
+
+~~~markdown
+# Next step: <step id> - <step title>
+
+Created: <YYYY-MM-DD HH:MM> (UTC+4)
+Plan: docs/plan.md
+
+## Done in this session
+- <phases / steps completed, with the checks that passed>
+
+## In progress
+- <step started but not finished, what is left>
+
+## Next step
+<step id and title, copied from the plan>
+
+Commands to run first:
+```zsh
+<source ~/.nvm/nvm.sh && nvm use 24.22.2 if Node; plus exact next-step commands>
+```
+
+## Files created or changed
+- <path> - <one line why>
+
+## Environment state
+- Running containers / services: <docker compose ps summary or "none">
+- Installed packages added this session: <list>
+- Pinned image tags chosen: <list>
+
+## Open issues and decisions
+- <errors not yet fixed, failed checks, questions for the user>
+~~~
+
+5. Tell the user the file name and the next step in one or two sentences.
+
+## At the start of a new session
+
+If the user asks to continue, resume, or "go on", read the newest `next_step_*.md` in the workspace root (sort by the date-time in the name), confirm the next step with the user in one sentence, then continue from it.

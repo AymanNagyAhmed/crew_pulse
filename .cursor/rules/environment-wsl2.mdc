@@ -1,0 +1,15 @@
+---
+description: Development environment is WSL2 Ubuntu
+alwaysApply: true
+---
+
+# Environment: WSL2 Ubuntu
+
+The user develops on **Windows with WSL2 running Ubuntu**, shell **zsh**, user `ayman-wsl`.
+
+- Give Linux (Ubuntu/apt) commands, not PowerShell or macOS (`brew`) commands.
+- Keep the project inside the Linux filesystem (`~/ai_projects/crew_pulse`), not under `/mnt/c/...` (slow I/O, broken file watching).
+- Docker: Docker Desktop with WSL integration for this distro, or Docker Engine in WSL (user in the `docker` group). If `docker ps` fails with `permission denied ... /var/run/docker.sock`, point to those two fixes.
+- Compose files live under `infrastructure/`; publish service ports so Windows browsers can hit `localhost`.
+- Hot reload with mounted volumes may need `CHOKIDAR_USEPOLLING=true` / `WATCHPACK_POLLING=true` (Nest) or equivalent for uvicorn reload if file events are missed.
+- Python vision models/caches: store under the Linux filesystem (project or `~/.cache`), not `/mnt/c`.

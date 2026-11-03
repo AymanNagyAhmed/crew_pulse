@@ -1,0 +1,46 @@
+---
+description: NestJS file layout - one concept per file, <name>.<kind>.ts naming, kind subfolders, no barrel files, tests next to code
+globs: services/api-gateway/**/*.ts,services/worker-node/**/*.ts
+alwaysApply: false
+---
+
+# NestJS file structure
+
+Follow NestJS docs and `nest g`: one main concept per file, named `<name>.<kind>.ts`.
+
+## One concept per file
+
+- One class, or one cohesive group of constants + types + helpers for one idea, per file.
+- Split when a file mixes unrelated concepts or grows past ~200 lines.
+- Small private helpers used only by that concept stay in its file.
+
+## Names and folders
+
+| Kind | File | Folder |
+|---|---|---|
+| module / controller / service | `attendance.module.ts`, `attendance.controller.ts`, `attendance.service.ts` | feature folder `modules/<feature>/` |
+| DTO | `create-check-in.dto.ts` | `<feature>/dto/` |
+| interface / type-only file | `api-response.interface.ts` | `<feature>/interfaces/` |
+| exception | `face-not-matched.exception.ts` | `<feature>/exceptions/` |
+| decorator | `roles.decorator.ts` | `<feature>/decorators/` |
+| guard, interceptor, filter, pipe, middleware | `roles.guard.ts`, `response.interceptor.ts`, ... | `guards/`, `interceptors/`, `filters/`, `pipes/`, `middleware/` |
+| config | `redis.config.ts` | `src/config/` |
+| queue processors | `attendance-log.processor.ts` | `<feature>/` or `processors/` |
+
+Code shared by several features goes in `src/common/<area>/` with the same subfolders.
+
+## No barrel files
+
+Never add `index.ts` files that re-export a folder; they cause circular imports between Nest modules. Import from the exact file (ESM: with `.js`):
+
+```typescript
+// BAD
+import { MatchResult } from '../vision/index.js';
+// GOOD
+import { MatchResult } from '../vision/match-result.js';
+```
+
+## Tests next to the code
+
+- Unit tests beside the file: `attendance.service.ts` → `attendance.service.spec.ts`.
+- Only e2e tests (`*.e2e-spec.ts`) live in `test/`.

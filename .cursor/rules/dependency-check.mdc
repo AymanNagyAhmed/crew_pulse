@@ -1,0 +1,56 @@
+---
+description: Check every npm package, Python package, and Docker image before installing, running or pulling it
+alwaysApply: true
+---
+
+# Check before you install
+
+Applies before: `npm install|i|add`, `npx <pkg>`, `npm create <pkg>`, `pip install`, `uv add`, `docker pull`, `docker run <image>`, a new `image:` in compose, or a new `FROM` in a Dockerfile.
+
+## npm (api-gateway, worker-node)
+
+Activate Node first (see `node-version.mdc`). Report one line per package: name, version, license, last publish, audit result.
+
+```bash
+source ~/.nvm/nvm.sh && nvm use 24.22.2 && \
+npm ls <pkg>; \
+npm view <pkg> name version dist-tags license deprecated engines peerDependencies time.modified repository.url scripts.install scripts.postinstall --json
+```
+
+1. Needed? Not already installed and not covered by Node built-ins or an existing dependency.
+2. Exact name from official docs (avoid typosquats).
+3. Latest stable from `dist-tags.latest`; never `next` / `beta` / `rc` / `canary`. Not `deprecated`.
+4. Maintained (~12 months) or clearly stable; active repository.
+5. License MIT, Apache-2.0, BSD-2/3, ISC or 0BSD. Ask before GPL, AGPL, SSPL, BUSL or missing license.
+6. `engines.node` accepts 24.22.2; peers match the project's NestJS major.
+7. Treat `install` / `postinstall` scripts as a risk; mention them.
+8. After install: `npm audit --audit-level=high` must report no high/critical.
+
+Exact versions + committed lockfile; `.npmrc` with `save-exact=true` and `engine-strict=true`; CI/Docker use `npm ci`.
+
+## Python (vision-engine)
+
+```bash
+pip index versions <pkg> 2>/dev/null || pip install <pkg>== 2>&1 | head -5
+# prefer pinning in requirements.txt / uv.lock; check PyPI license and recent releases
+```
+
+1. Prefer packages already in the vision stack (OpenCV, DeepFace, RetinaFace, NumPy, FastAPI, Uvicorn) before adding alternatives.
+2. Pin versions; no unpinned `pip install` in Dockerfiles for production stages.
+3. Ask before GPL/AGPL or packages that download large model weights at import time without documenting cache paths.
+
+## Docker images
+
+```bash
+curl -s "https://hub.docker.com/v2/repositories/library/postgres/tags?page_size=50&ordering=last_updated" \
+  | jq -r '.results[].name' | grep -Eiv 'latest|rc|beta|alpha|nightly|dev'
+docker pull postgres:<tag> && docker inspect --format '{{index .RepoDigests 0}}' postgres:<tag>
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:<tag> image --severity HIGH,CRITICAL <image>:<tag>
+```
+
+1. Docker Official Image or vendor namespace (`library/`, `nginx`, etc.). No random user images.
+2. Pin version tags (never `latest`); pin digests in production compose.
+3. Prefer `-slim` / `-alpine` / distroless for runtime.
+4. No high/critical vulns without a documented reason.
+
+If any check fails, stop and ask the user before installing.
