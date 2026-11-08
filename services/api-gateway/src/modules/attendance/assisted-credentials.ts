@@ -1,5 +1,7 @@
 import { timingSafeEqual } from 'node:crypto';
 
+export type AssistedMethod = 'supervisor_pin' | 'qr' | 'badge';
+
 function safeEqual(a: string, b: string): boolean {
   const left = Buffer.from(a);
   const right = Buffer.from(b);
@@ -9,7 +11,7 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(left, right);
 }
 
-export function parseQrTokens(raw: string | undefined): string[] {
+export function parseTokenList(raw: string | undefined): string[] {
   if (!raw?.trim()) {
     return [];
   }
@@ -19,11 +21,17 @@ export function parseQrTokens(raw: string | undefined): string[] {
     .filter((t) => t.length > 0);
 }
 
+/** @deprecated Prefer parseTokenList — kept for existing imports. */
+export function parseQrTokens(raw: string | undefined): string[] {
+  return parseTokenList(raw);
+}
+
 export function verifyAssistedCredential(input: {
-  method: 'supervisor_pin' | 'qr';
+  method: AssistedMethod;
   credential: string;
   supervisorPin: string;
   qrTokens: string[];
+  badgeTokens: string[];
 }): boolean {
   const credential = input.credential.trim();
   if (!credential) {
@@ -32,5 +40,8 @@ export function verifyAssistedCredential(input: {
   if (input.method === 'supervisor_pin') {
     return safeEqual(credential, input.supervisorPin);
   }
-  return input.qrTokens.some((token) => safeEqual(credential, token));
+  if (input.method === 'qr') {
+    return input.qrTokens.some((token) => safeEqual(credential, token));
+  }
+  return input.badgeTokens.some((token) => safeEqual(credential, token));
 }

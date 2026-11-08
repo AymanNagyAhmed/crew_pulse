@@ -7,7 +7,10 @@ import { AttendanceCheckInProcessor } from './attendance-check-in.processor.js';
 import type { AttendanceCheckInJob } from './attendance-check-in.job.js';
 
 function makeJob(data: AttendanceCheckInJob) {
-  return { data } as never;
+  return {
+    data,
+    updateData: vi.fn().mockResolvedValue(undefined),
+  } as never;
 }
 
 describe('AttendanceCheckInProcessor', () => {

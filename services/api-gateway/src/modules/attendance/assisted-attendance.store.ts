@@ -7,7 +7,7 @@ export type AssistedAttendanceRecord = {
   venueId: string;
   shiftId: string;
   direction: 'in' | 'out';
-  method: 'supervisor_pin' | 'qr';
+  method: 'supervisor_pin' | 'qr' | 'badge';
   reason?: string;
   idempotencyKey: string;
   punchedAt: string;
@@ -15,7 +15,7 @@ export type AssistedAttendanceRecord = {
 };
 
 /**
- * Assisted (PIN/QR) punches when biometrics cannot run (heavy PPE/occlusion).
+ * Assisted (PIN / QR / badge) punches when biometrics cannot or must not run.
  * In-memory until shared Postgres attendance store lands (C11).
  */
 @Injectable()

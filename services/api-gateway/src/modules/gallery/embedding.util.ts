@@ -47,3 +47,14 @@ export function l2Normalize(embedding: number[]): number[] {
 export function toPgVectorLiteral(embedding: number[]): string {
   return `[${embedding.join(',')}]`;
 }
+
+/** Cosine similarity for L2-normalized vectors (dot product). */
+export function cosineSimilarity(a: number[], b: number[]): number {
+  assertEmbeddingDim(a);
+  assertEmbeddingDim(b);
+  let dot = 0;
+  for (let i = 0; i < FACE_EMBEDDING_DIM; i++) {
+    dot += a[i]! * b[i]!;
+  }
+  return dot;
+}

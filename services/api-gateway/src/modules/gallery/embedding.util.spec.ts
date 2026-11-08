@@ -3,6 +3,7 @@ import { DomainException } from '../../common/exceptions/domain.exception.js';
 import { FACE_EMBEDDING_DIM } from '../database/database.constants.js';
 import {
   assertEmbeddingDim,
+  cosineSimilarity,
   l2Normalize,
   toPgVectorLiteral,
 } from './embedding.util.js';
@@ -29,5 +30,10 @@ describe('embedding.util', () => {
     expect(lit.startsWith('[')).toBe(true);
     expect(lit.endsWith(']')).toBe(true);
     expect(lit.split(',').length).toBe(FACE_EMBEDDING_DIM);
+  });
+
+  it('cosine similarity is ~1 for identical unit vectors', () => {
+    const n = l2Normalize(sampleEmbedding(8));
+    expect(cosineSimilarity(n, n)).toBeCloseTo(1, 10);
   });
 });

@@ -10,18 +10,20 @@ const DATABASE_URL =
   process.env.DATABASE_URL ??
   'postgresql://crewpulse:crewpulse_dev_change_me@localhost:15434/crewpulse';
 
+const DEV_KEY = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
+
 function embeddingFromSeed(seed: number): number[] {
   return Array.from({ length: FACE_EMBEDDING_DIM }, (_, i) =>
     Math.sin((i + 1) * seed * 0.013) + Math.cos((i + 3) * seed * 0.007),
   );
 }
 
-describe('GalleryService (pgvector HNSW)', () => {
+describe('GalleryService (encrypted roster search)', () => {
   let moduleRef: TestingModule;
   let gallery: GalleryService;
   const suffix = `${Date.now()}`;
-  const venueId = `ven_c4_${suffix}`;
-  const shiftId = `shf_c4_${suffix}`;
+  const venueId = `ven_c7_${suffix}`;
+  const shiftId = `shf_c7_${suffix}`;
   const onRoster = `wrk_on_${suffix}`;
   const offRoster = `wrk_off_${suffix}`;
   const distractor = `wrk_dist_${suffix}`;
@@ -34,6 +36,7 @@ describe('GalleryService (pgvector HNSW)', () => {
     process.env.VISION_ENGINE_URL =
       process.env.VISION_ENGINE_URL ?? 'http://localhost:8000';
     process.env.API_GATEWAY_PORT = '3000';
+    process.env.BIOMETRIC_TEMPLATE_KEY = DEV_KEY;
 
     moduleRef = await Test.createTestingModule({
       imports: [
@@ -44,14 +47,14 @@ describe('GalleryService (pgvector HNSW)', () => {
     }).compile();
 
     gallery = moduleRef.get(GalleryService);
-    expect(await gallery.hnswIndexExists()).toBe(true);
+    expect(await gallery.encryptedSchemaReady()).toBe(true);
   }, 30_000);
 
   afterAll(async () => {
     await moduleRef?.close();
   });
 
-  it('upserts templates, scopes search to roster, and prefers the nearest enrolled worker', async () => {
+  it('stores ciphertext, scopes search to roster, and never needs plaintext columns', async () => {
     const target = embeddingFromSeed(11);
     const nearProbe = target.map((v, i) => v + (i % 7 === 0 ? 0.02 : 0));
 
@@ -76,9 +79,9 @@ describe('GalleryService (pgvector HNSW)', () => {
 
     await gallery.upsertRoster({
       venueId,
-      venueName: 'C4 test venue',
+      venueName: 'C7 test venue',
       shiftId,
-      shiftLabel: 'C4 shift',
+      shiftLabel: 'C7 shift',
       workerId: onRoster,
     });
     await gallery.upsertRoster({
@@ -86,7 +89,6 @@ describe('GalleryService (pgvector HNSW)', () => {
       shiftId,
       workerId: distractor,
     });
-    // offRoster deliberately not added to roster
 
     const first = await gallery.upsertTemplate({
       workerId: onRoster,
@@ -95,6 +97,7 @@ describe('GalleryService (pgvector HNSW)', () => {
     });
     expect(first.created).toBe(false);
     expect(first.embeddingDim).toBe(FACE_EMBEDDING_DIM);
+    expect(first.encryptionKid).toBe('v1');
 
     const result = await gallery.search({
       venueId,
@@ -104,7 +107,7 @@ describe('GalleryService (pgvector HNSW)', () => {
       embedding: nearProbe,
     });
 
-    expect(result.index).toBe('hnsw');
+    expect(result.index).toBe('encrypted_roster');
     expect(result.candidates.length).toBeGreaterThanOrEqual(1);
     expect(result.candidates[0]?.workerId).toBe(onRoster);
     expect(result.candidates.some((c) => c.workerId === offRoster)).toBe(
@@ -114,5 +117,51 @@ describe('GalleryService (pgvector HNSW)', () => {
       true,
     );
     expect(result.candidates[0]?.score ?? 0).toBeGreaterThan(0.9);
+  });
+
+  it('erases templates with audit and excludes them from search', async () => {
+    const workerId = `wrk_erase_${suffix}`;
+    await gallery.upsertTemplate({
+      workerId,
+      modelVersion,
+      embedding: embeddingFromSeed(3),
+    });
+    await gallery.upsertRoster({
+      venueId,
+      shiftId,
+      workerId,
+    });
+
+    const erased = await gallery.eraseBiometrics(workerId, {
+      requestedBy: 'test',
+      reason: 'unit erase',
+    });
+    expect(erased.templatesRemoved).toBeGreaterThanOrEqual(1);
+    expect(erased.auditId).toBeTruthy();
+
+    const listed = await gallery.listTemplates(workerId);
+    expect(listed.total).toBe(0);
+
+    const result = await gallery.search({
+      venueId,
+      shiftId,
+      modelVersion,
+      embedding: embeddingFromSeed(3),
+    });
+    expect(result.candidates.some((c) => c.workerId === workerId)).toBe(false);
+  });
+
+  it('purges workers past retentionUntil', async () => {
+    const workerId = `wrk_ret_${suffix}`;
+    await gallery.upsertTemplate({
+      workerId,
+      modelVersion,
+      embedding: embeddingFromSeed(7),
+    });
+    const past = new Date(Date.now() - 60_000).toISOString();
+    await gallery.setRetention(workerId, { retentionUntil: past });
+    const purged = await gallery.purgeExpired({ requestedBy: 'test-purge' });
+    expect(purged.workersPurged).toBeGreaterThanOrEqual(1);
+    expect(purged.items.some((i) => i.workerId === workerId)).toBe(true);
   });
 });

@@ -7,7 +7,7 @@ Kitchen and catering PPE (masks, hairnets, face shields) often removes mid-face 
 1. **Detect** runs quality → PAD → **occlusion** before embed.
 2. Heavy lower-face coverage yields `reject_reasons` of `face_occluded` or `ppe_occlusion` and **no** embedding.
 3. **Match** returns `decision: "assisted_fallback"` (not `no_match`) so clients open assisted flow.
-4. **Assisted punch** (api-gateway): `POST /v1/attendance/assisted-check-ins` with `supervisor_pin` or `qr`.
+4. **Assisted punch** (api-gateway): `POST /v1/attendance/assisted-check-ins` with `supervisor_pin`, `qr`, or `badge`.
 
 Accepted faces include `occlusion_score` (0 clear → 1 heavy) for metrics; gateways should not surface the raw score as a user verdict beyond the reject codes.
 
@@ -26,5 +26,6 @@ Accepted faces include `occlusion_score` (0 clear → 1 heavy) for metrics; gate
 | `OCCLUSION_MAX_SCORE` | `0.55` | At/above → assisted path |
 | `ASSISTED_SUPERVISOR_PIN` | `dev-pin-change-me` | Local/dev PIN (change in real deploys) |
 | `ASSISTED_QR_TOKENS` | `dev-qr-change-me` | Comma-separated station QR payloads |
+| `ASSISTED_BADGE_TOKENS` | `dev-badge-change-me` | Comma-separated badge swipe payloads (C7) |
 
 Heuristics are stubs until a masked-face model ships; reject codes and assisted API stay stable.

@@ -59,6 +59,9 @@ export class AttendanceCheckInProcessor extends WorkerHost {
         idempotencyKey: payload.idempotencyKey,
         message,
       };
+    } finally {
+      // C7: drop raw frame from Redis job payload after the vision call.
+      await this.scrubInFlightFrame(job);
     }
 
     if (match.decision !== 'matched' || !match.candidates[0]) {
@@ -114,5 +117,26 @@ export class AttendanceCheckInProcessor extends WorkerHost {
       attendanceId: result.record.id,
       bestScore: match.best_score,
     };
+  }
+
+  /** Clear imageBase64 so completed job records are not long-lived face stores. */
+  private async scrubInFlightFrame(
+    job: Job<AttendanceCheckInJob>,
+  ): Promise<void> {
+    try {
+      const data = job.data;
+      if (!data.imageBase64) {
+        return;
+      }
+      await job.updateData({
+        ...data,
+        imageBase64: '',
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'scrub failed';
+      this.logger.warn(
+        `failed to scrub in-flight frame key=${job.data.idempotencyKey}: ${message}`,
+      );
+    }
   }
 }

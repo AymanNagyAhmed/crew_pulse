@@ -22,7 +22,7 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 - [x] **C4** `4-scaling-vector-search` — pgvector HNSW + venue/shift-scoped 1:N
 - [x] **C5** `5-ppe-masks-and-occlusion` — occlusion-aware match + assisted fallback
 - [x] **C6** `6-pose-angle-and-capture-quality` — capture QA + multi-template enrollment
-- [ ] **C7** `7-biometric-privacy-and-compliance` — encrypted templates, retention, no vector logs
+- [x] **C7** `7-biometric-privacy-and-compliance` — encrypted templates, retention, no vector logs
 - [ ] **C8** `8-demographic-bias-and-fairness` — group-wise metrics + release gates
 - [ ] **C9** `9-async-pipelines-and-end-to-end-latency` — SLOs, backpressure, idempotent jobs
 - [ ] **C10** `10-multi-venue-connectivity-and-edge` — offline / edge roster + sync
@@ -103,6 +103,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 **Cover by:** Encrypt templates at rest; never log full vectors; short-lived in-flight frame handling; retention/erasure hooks; usable non-biometric fallback (badge/PIN).
 
 **Done when:** No embedding in logs/responses unless explicitly contracted; retention job or documented erase API; fallback punch path exists.
+
+**Status (2026-11-08):** AES-GCM `embedding_ciphertext` (`003_biometric_privacy.sql`); roster decrypt search; erase + retention purge APIs; BullMQ frame age/scrub; assisted `badge` method; `infrastructure/docs/biometric-privacy.md`.
 
 ---
 

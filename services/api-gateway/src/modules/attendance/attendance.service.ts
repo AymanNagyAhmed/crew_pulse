@@ -10,7 +10,7 @@ import {
   AssistedAttendanceStore,
 } from './assisted-attendance.store.js';
 import {
-  parseQrTokens,
+  parseTokenList,
   verifyAssistedCredential,
 } from './assisted-credentials.js';
 import type {
@@ -41,7 +41,7 @@ export type AssistedCheckInResult = {
   venueId: string;
   shiftId: string;
   direction: 'in' | 'out';
-  method: 'supervisor_pin' | 'qr';
+  method: 'supervisor_pin' | 'qr' | 'badge';
   reason?: string;
   idempotencyKey: string;
   punchedAt: string;
@@ -93,10 +93,12 @@ export class AttendanceService {
         : {}),
     };
 
+    // Short-lived in-flight frames (C7): age-cap completed/failed jobs so
+    // imageBase64 does not linger in Redis beyond the decision window.
     const job = await this.checkInQueue.add('check-in', payload, {
       jobId: idempotencyKey,
-      removeOnComplete: 200,
-      removeOnFail: 100,
+      removeOnComplete: { age: 120, count: 100 },
+      removeOnFail: { age: 300, count: 50 },
       attempts: 2,
       backoff: { type: 'exponential', delay: 500 },
     });
@@ -130,8 +132,8 @@ export class AttendanceService {
   }
 
   /**
-   * Non-biometric punch when vision returns assisted_fallback (heavy PPE/mask).
-   * Validates supervisor PIN or station QR; does not call vision-engine.
+   * Non-biometric punch (PIN / QR / badge) — PPE fallback and privacy opt-out.
+   * Does not call vision-engine or touch embeddings.
    */
   recordAssistedCheckIn(
     dto: AssistedCheckInDto,
@@ -140,8 +142,11 @@ export class AttendanceService {
     const supervisorPin =
       this.config.get<string>('ASSISTED_SUPERVISOR_PIN') ??
       'dev-pin-change-me';
-    const qrTokens = parseQrTokens(
+    const qrTokens = parseTokenList(
       this.config.get<string>('ASSISTED_QR_TOKENS') ?? 'dev-qr-change-me',
+    );
+    const badgeTokens = parseTokenList(
+      this.config.get<string>('ASSISTED_BADGE_TOKENS') ?? 'dev-badge-change-me',
     );
 
     const ok = verifyAssistedCredential({
@@ -149,11 +154,12 @@ export class AttendanceService {
       credential: dto.credential,
       supervisorPin,
       qrTokens,
+      badgeTokens,
     });
     if (!ok) {
       throw new DomainException(
         'ASSISTED_CREDENTIAL_INVALID',
-        'Supervisor PIN or QR token was rejected',
+        'Supervisor PIN, QR, or badge credential was rejected',
         401,
         [{ field: 'credential', issue: 'invalid for assisted check-in' }],
       );
