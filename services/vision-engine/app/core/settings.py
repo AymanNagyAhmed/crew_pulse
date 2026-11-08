@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     # Live score 0 spoof → 1 live; reject below this for payroll-grade punches.
     pad_min_score: float = 0.45
 
+    # Heavy PPE / mask occlusion → assisted fallback (not silent false reject).
+    occlusion_enabled: bool = True
+    # Occlusion score 0 clear → 1 heavy; at/above this, skip embed and signal assisted path.
+    occlusion_max_score: float = 0.55
+
 
 @lru_cache
 def get_settings() -> Settings:

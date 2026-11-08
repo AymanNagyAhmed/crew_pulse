@@ -1,11 +1,26 @@
 import { describe, expect, it, vi } from 'vitest';
+import { DomainException } from '../../common/exceptions/domain.exception.js';
+import { AssistedAttendanceStore } from './assisted-attendance.store.js';
 import { AttendanceService } from './attendance.service.js';
 
 describe('AttendanceService', () => {
   it('enqueues check-in and returns job id without awaiting match', async () => {
     const add = vi.fn().mockResolvedValue({ id: 'chk_abc' });
     const queue = { add, getJob: vi.fn().mockResolvedValue(undefined) };
-    const service = new AttendanceService(queue as never);
+    const config = {
+      get: vi.fn((key: string) =>
+        key === 'ASSISTED_SUPERVISOR_PIN'
+          ? 'dev-pin-change-me'
+          : key === 'ASSISTED_QR_TOKENS'
+            ? 'dev-qr-change-me'
+            : undefined,
+      ),
+    };
+    const service = new AttendanceService(
+      queue as never,
+      new AssistedAttendanceStore(),
+      config as never,
+    );
 
     const started = Date.now();
     const result = await service.enqueueCheckIn(
@@ -31,5 +46,66 @@ describe('AttendanceService', () => {
       }),
       expect.objectContaining({ jobId: 'chk_abc' }),
     );
+  });
+
+  it('records assisted check-in with valid supervisor PIN', () => {
+    const queue = { add: vi.fn(), getJob: vi.fn() };
+    const config = {
+      get: vi.fn((key: string) =>
+        key === 'ASSISTED_SUPERVISOR_PIN'
+          ? 'dev-pin-change-me'
+          : key === 'ASSISTED_QR_TOKENS'
+            ? 'station-qr-1'
+            : undefined,
+      ),
+    };
+    const service = new AttendanceService(
+      queue as never,
+      new AssistedAttendanceStore(),
+      config as never,
+    );
+
+    const result = service.recordAssistedCheckIn(
+      {
+        venueId: 'ven_1',
+        shiftId: 'shf_1',
+        direction: 'in',
+        workerId: 'wrk_ppe',
+        method: 'supervisor_pin',
+        credential: 'dev-pin-change-me',
+        reason: 'face_occluded',
+      },
+      'assist_1',
+    );
+
+    expect(result.state).toBe('recorded');
+    expect(result.attendanceId).toMatch(/^att_assist_/);
+    expect(result.method).toBe('supervisor_pin');
+    expect(result.reason).toBe('face_occluded');
+  });
+
+  it('rejects invalid assisted credentials', () => {
+    const queue = { add: vi.fn(), getJob: vi.fn() };
+    const config = {
+      get: vi.fn((key: string) =>
+        key === 'ASSISTED_SUPERVISOR_PIN' ? 'dev-pin-change-me' : 'dev-qr',
+      ),
+    };
+    const service = new AttendanceService(
+      queue as never,
+      new AssistedAttendanceStore(),
+      config as never,
+    );
+
+    expect(() =>
+      service.recordAssistedCheckIn({
+        venueId: 'ven_1',
+        shiftId: 'shf_1',
+        direction: 'in',
+        workerId: 'wrk_ppe',
+        method: 'qr',
+        credential: 'wrong-token',
+      }),
+    ).toThrow(DomainException);
   });
 });

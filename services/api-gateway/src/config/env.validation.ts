@@ -13,6 +13,10 @@ export type AppEnv = {
   VISION_ENGINE_URL: string;
   /** Comma-separated browser origins; optional */
   CORS_ORIGINS?: string;
+  /** Dev/local supervisor PIN for PPE-assisted check-ins (C5) */
+  ASSISTED_SUPERVISOR_PIN?: string;
+  /** Comma-separated station QR tokens for assisted check-ins */
+  ASSISTED_QR_TOKENS?: string;
 };
 
 export function validateEnv(config: Record<string, unknown>): AppEnv {
@@ -31,6 +35,15 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
       ? corsRaw.trim()
       : undefined;
 
+  const pinRaw = config.ASSISTED_SUPERVISOR_PIN;
+  const assistedPin =
+    typeof pinRaw === 'string' && pinRaw.trim() !== ''
+      ? pinRaw.trim()
+      : undefined;
+  const qrRaw = config.ASSISTED_QR_TOKENS;
+  const assistedQr =
+    typeof qrRaw === 'string' && qrRaw.trim() !== '' ? qrRaw.trim() : undefined;
+
   if (isTest) {
     return {
       NODE_ENV: nodeEnv,
@@ -41,6 +54,8 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
         config.VISION_ENGINE_URL ?? 'http://localhost:8000',
       ),
       ...(corsOrigins !== undefined ? { CORS_ORIGINS: corsOrigins } : {}),
+      ASSISTED_SUPERVISOR_PIN: assistedPin ?? 'dev-pin-change-me',
+      ASSISTED_QR_TOKENS: assistedQr ?? 'dev-qr-change-me',
     };
   }
 
@@ -54,5 +69,7 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
       config.VISION_ENGINE_URL as string | undefined,
     ),
     ...(corsOrigins !== undefined ? { CORS_ORIGINS: corsOrigins } : {}),
+    ASSISTED_SUPERVISOR_PIN: assistedPin ?? 'dev-pin-change-me',
+    ASSISTED_QR_TOKENS: assistedQr ?? 'dev-qr-change-me',
   };
 }

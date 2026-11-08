@@ -10,7 +10,10 @@ from app.services.detection import DetectionService
 
 STUB_MATCH_THRESHOLD = 0.75
 
-MatchDecision = Literal["matched", "no_match", "needs_review"]
+MatchDecision = Literal["matched", "no_match", "needs_review", "assisted_fallback"]
+
+# Heavy PPE/mask → assisted PIN/QR; never treat as a silent biometric miss.
+_ASSISTED_REJECT_CODES = frozenset({"face_occluded", "ppe_occlusion"})
 
 
 class MatchingService:
@@ -27,15 +30,21 @@ class MatchingService:
         primary = detect.faces[0] if detect.faces else None
 
         if primary is None:
+            reasons = list(detect.reject_reasons)
+            decision: MatchDecision = (
+                "assisted_fallback"
+                if _ASSISTED_REJECT_CODES.intersection(reasons)
+                else "no_match"
+            )
             return MatchResponse(
-                decision="no_match",
+                decision=decision,
                 best_score=0.0,
                 threshold=STUB_MATCH_THRESHOLD,
                 candidates=[],
                 face=None,
                 model_version=detect.model_version,
                 stub=detect.stub,
-                reject_reasons=list(detect.reject_reasons),
+                reject_reasons=reasons,
             )
 
         worker_ids = payload.candidate_worker_ids or ["worker_stub_001"]

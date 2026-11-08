@@ -20,7 +20,7 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 - [x] **C2** `2-low-light-and-harsh-illumination` — luminance / quality gates + deploy lighting SOP
 - [x] **C3** `3-presentation-attacks-and-liveness` — PAD / liveness before match
 - [x] **C4** `4-scaling-vector-search` — pgvector HNSW + venue/shift-scoped 1:N
-- [ ] **C5** `5-ppe-masks-and-occlusion` — occlusion-aware match + assisted fallback
+- [x] **C5** `5-ppe-masks-and-occlusion` — occlusion-aware match + assisted fallback
 - [ ] **C6** `6-pose-angle-and-capture-quality` — capture QA + multi-template enrollment
 - [ ] **C7** `7-biometric-privacy-and-compliance` — encrypted templates, retention, no vector logs
 - [ ] **C8** `8-demographic-bias-and-fairness` — group-wise metrics + release gates
@@ -81,6 +81,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 **Cover by:** Detect heavy occlusion; prefer occlusion-aware models or PPE-on/PPE-off enrollment variants; route hard occlusion to assisted fallback (supervisor PIN / QR), not silent false reject.
 
 **Done when:** Occlusion signal in detect response; fallback path wired in api-gateway attendance flow; tests with masked/occluded fixtures.
+
+**Status (2026-11-08):** Occlusion gate + `occlusion_score` / `face_occluded`; match `assisted_fallback`; `POST /v1/attendance/assisted-check-ins` (PIN/QR); `infrastructure/docs/ppe-occlusion-sop.md`; masked fixture + tests.
 
 ---
 

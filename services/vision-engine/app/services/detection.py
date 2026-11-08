@@ -19,6 +19,7 @@ from app.schemas.vision import (
     FaceQuality,
 )
 from app.services.image_codec import decode_image_base64
+from app.services.occlusion import occlusion_reject_reason
 from app.services.pad import pad_reject_reason
 from app.services.quality import (
     face_quality_from_bgr,
@@ -88,7 +89,15 @@ class DetectionService:
                     reject_reasons.append(code)
                 continue
 
-            # Embed only after quality + PAD gates; discard vector immediately.
+            occ_reject, occ_score = occlusion_reject_reason(face_bgr, settings)
+            if occ_reject is not None:
+                code = reject_code(occ_reject)
+                logger.info("occlusion_gate_reject reason=%s", occ_reject)
+                if code not in reject_reasons:
+                    reject_reasons.append(code)
+                continue
+
+            # Embed only after quality + PAD + occlusion gates; discard vector immediately.
             reps = DeepFace.represent(
                 img_path=face_bgr,
                 model_name=settings.embedding_model,
@@ -115,6 +124,7 @@ class DetectionService:
                     quality=quality,
                     embedding_dim=embedding_dim,
                     pad_score=pad_score,
+                    occlusion_score=occ_score,
                 )
             )
 
@@ -140,6 +150,7 @@ class DetectionService:
             ),
             embedding_dim=STUB_EMBEDDING_DIM,
             pad_score=0.92,
+            occlusion_score=0.08,
         )
         return DetectResponse(
             faces=[face],

@@ -56,6 +56,13 @@ class DetectedFace(BaseModel):
         description="Passive PAD live score 0 spoof → 1 live (accepted faces only)",
         examples=[0.88],
     )
+    occlusion_score: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Lower-face occlusion 0 clear → 1 heavy (accepted faces only)",
+        examples=[0.12],
+    )
 
 
 class DetectResponse(BaseModel):
@@ -66,9 +73,9 @@ class DetectResponse(BaseModel):
         default_factory=list,
         description=(
             "Coachable codes when faces were rejected before embed "
-            "(e.g. face_too_dark, pad_print, pad_replay). Empty when none."
+            "(e.g. face_too_dark, pad_print, face_occluded). Empty when none."
         ),
-        examples=[["face_too_dark"], ["pad_print"]],
+        examples=[["face_too_dark"], ["pad_print"], ["face_occluded"]],
     )
 
 
@@ -91,7 +98,7 @@ class MatchCandidate(BaseModel):
 
 
 class MatchResponse(BaseModel):
-    decision: Literal["matched", "no_match", "needs_review"]
+    decision: Literal["matched", "no_match", "needs_review", "assisted_fallback"]
     best_score: float = Field(ge=0.0, le=1.0)
     threshold: float = Field(ge=0.0, le=1.0, examples=[0.75])
     candidates: list[MatchCandidate]
@@ -103,7 +110,8 @@ class MatchResponse(BaseModel):
     reject_reasons: list[str] = Field(
         default_factory=list,
         description=(
-            "Propagated from detect quality/PAD gates; coach capture, do not force match"
+            "Propagated from detect quality/PAD/occlusion gates; "
+            "face_occluded / ppe_occlusion → assisted PIN/QR, not silent reject"
         ),
-        examples=[["face_too_dark"], ["pad_replay"]],
+        examples=[["face_too_dark"], ["pad_replay"], ["face_occluded"]],
     )

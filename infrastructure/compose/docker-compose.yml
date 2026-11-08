@@ -55,6 +55,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-crewpulse}:${POSTGRES_PASSWORD:-crewpulse_dev_change_me}@postgres:5432/${POSTGRES_DB:-crewpulse}
       REDIS_URL: redis://redis:6379
       VISION_ENGINE_URL: http://vision-engine:8000
+      ASSISTED_SUPERVISOR_PIN: ${ASSISTED_SUPERVISOR_PIN:-dev-pin-change-me}
+      ASSISTED_QR_TOKENS: ${ASSISTED_QR_TOKENS:-dev-qr-change-me}
     ports:
       - "127.0.0.1:${API_GATEWAY_PORT:-3000}:3000"
     depends_on:
@@ -84,6 +86,8 @@ services:
       FACE_MAX_LUMINANCE: ${FACE_MAX_LUMINANCE:-0.92}
       PAD_ENABLED: ${PAD_ENABLED:-true}
       PAD_MIN_SCORE: ${PAD_MIN_SCORE:-0.45}
+      OCCLUSION_ENABLED: ${OCCLUSION_ENABLED:-true}
+      OCCLUSION_MAX_SCORE: ${OCCLUSION_MAX_SCORE:-0.55}
     ports:
       - "127.0.0.1:${VISION_ENGINE_PORT:-8000}:8000"
     volumes:
