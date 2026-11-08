@@ -100,6 +100,7 @@ services:
       WORKER_NODE_PORT: ${WORKER_NODE_PORT:-3001}
       DATABASE_URL: postgresql://${POSTGRES_USER:-crewpulse}:${POSTGRES_PASSWORD:-crewpulse_dev_change_me}@postgres:5432/${POSTGRES_DB:-crewpulse}
       REDIS_URL: redis://redis:6379
+      VISION_ENGINE_URL: http://vision-engine:8000
       ATTENDANCE_COOLDOWN_SECONDS: ${ATTENDANCE_COOLDOWN_SECONDS:-60}
     ports:
       - "127.0.0.1:${WORKER_NODE_PORT:-3001}:3001"
@@ -107,6 +108,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      vision-engine:
         condition: service_healthy
 
   nginx:

@@ -1,15 +1,22 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AttendanceCheckInProcessor } from '../../processors/attendance-check-in.processor.js';
 import { AttendanceLogProcessor } from '../../processors/attendance-log.processor.js';
 import { WebhookProcessor } from '../../processors/webhook.processor.js';
 import { AttendanceModule } from '../attendance/attendance.module.js';
+import { VisionModule } from '../vision/vision.module.js';
 import { IdempotencyService } from './idempotency.service.js';
-import { ATTENDANCE_LOG_QUEUE, WEBHOOK_QUEUE } from './queue.constants.js';
+import {
+  ATTENDANCE_CHECK_IN_QUEUE,
+  ATTENDANCE_LOG_QUEUE,
+  WEBHOOK_QUEUE,
+} from './queue.constants.js';
 
 @Module({
   imports: [
     AttendanceModule,
+    VisionModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -19,10 +26,16 @@ import { ATTENDANCE_LOG_QUEUE, WEBHOOK_QUEUE } from './queue.constants.js';
     }),
     BullModule.registerQueue(
       { name: ATTENDANCE_LOG_QUEUE },
+      { name: ATTENDANCE_CHECK_IN_QUEUE },
       { name: WEBHOOK_QUEUE },
     ),
   ],
-  providers: [IdempotencyService, AttendanceLogProcessor, WebhookProcessor],
+  providers: [
+    IdempotencyService,
+    AttendanceLogProcessor,
+    AttendanceCheckInProcessor,
+    WebhookProcessor,
+  ],
   exports: [BullModule, IdempotencyService, AttendanceModule],
 })
 export class QueuesModule {}

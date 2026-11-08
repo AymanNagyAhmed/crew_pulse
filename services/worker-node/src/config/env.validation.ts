@@ -10,6 +10,7 @@ export type WorkerEnv = {
   WORKER_NODE_PORT: number;
   REDIS_URL: string;
   DATABASE_URL: string;
+  VISION_ENGINE_URL: string;
   ATTENDANCE_COOLDOWN_SECONDS: number;
 };
 
@@ -37,6 +38,9 @@ export function validateEnv(config: Record<string, unknown>): WorkerEnv {
       DATABASE_URL: String(
         config.DATABASE_URL ?? 'postgresql://test:test@localhost:15434/crewpulse',
       ),
+      VISION_ENGINE_URL: String(
+        config.VISION_ENGINE_URL ?? 'http://localhost:8000',
+      ),
       ATTENDANCE_COOLDOWN_SECONDS: cooldown,
     };
   }
@@ -48,6 +52,10 @@ export function validateEnv(config: Record<string, unknown>): WorkerEnv {
     DATABASE_URL: required(
       'DATABASE_URL',
       config.DATABASE_URL as string | undefined,
+    ),
+    VISION_ENGINE_URL: required(
+      'VISION_ENGINE_URL',
+      config.VISION_ENGINE_URL as string | undefined,
     ),
     ATTENDANCE_COOLDOWN_SECONDS: cooldown,
   };

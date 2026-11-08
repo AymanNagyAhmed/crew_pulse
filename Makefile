@@ -82,6 +82,15 @@ smoke: health
 	curl -sf "http://127.0.0.1:$${API_GATEWAY_PORT:-3000}/v1/attendance" \
 	  | grep -q '"success":true'; \
 	echo "  ok (/v1/attendance)"; \
+	echo "async check-in enqueue..."; \
+	KEY="smoke_chk_$$(date +%s)"; \
+	RESP=$$(curl -sf -X POST "http://127.0.0.1:$${API_GATEWAY_PORT:-3000}/v1/attendance/check-ins" \
+	  -H 'Content-Type: application/json' \
+	  -H "Idempotency-Key: $${KEY}" \
+	  -d "{\"imageBase64\":\"$${IMG}\",\"venueId\":\"ven_smoke\",\"shiftId\":\"shf_smoke\",\"direction\":\"in\",\"candidateWorkerIds\":[\"wrk_smoke_001\"]}"); \
+	echo "$${RESP}" | grep -q '"statusCode":202'; \
+	echo "$${RESP}" | grep -q "$${KEY}"; \
+	echo "  ok (POST /v1/attendance/check-ins 202)"; \
 	echo "smoke path ok"
 
 frontend-dev:

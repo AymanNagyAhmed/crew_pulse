@@ -1,7 +1,7 @@
 # Vision ↔ api-gateway contract (stubs)
 
 Base URL: `VISION_ENGINE_URL` (default `http://localhost:8000`).  
-Gateway has no HTTP client module yet; this is the contract it should call when attendance orchestration lands.
+Peak-load check-ins: **api-gateway** accepts `POST /v1/attendance/check-ins` (202 + job id) and enqueues BullMQ `attendance-check-in`; **worker-node** calls this vision contract, then persists. Do not run detect/match on the gateway request path.
 
 | Method | Path | Purpose |
 |--------|------|---------|

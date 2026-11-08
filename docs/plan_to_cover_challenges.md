@@ -16,7 +16,7 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 
 ## Progress checklist
 
-- [ ] **C1** `1-high-throughput-shift-spikes` — queue & decouple under shift spikes
+- [x] **C1** `1-high-throughput-shift-spikes` — queue & decouple under shift spikes
 - [ ] **C2** `2-low-light-and-harsh-illumination` — luminance / quality gates + deploy lighting SOP
 - [ ] **C3** `3-presentation-attacks-and-liveness` — PAD / liveness before match
 - [ ] **C4** `4-scaling-vector-search` — pgvector HNSW + venue/shift-scoped 1:N
@@ -37,6 +37,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 **Cover by:** Accept check-in frames with a fast ack; push detect/embed/match/persist onto BullMQ (Redis); scale vision workers independently of HTTP; client quality gates before upload. No synchronous full pipeline on the request path.
 
 **Done when:** Peak-load path returns 202 (or equivalent) with job id; worker completes match; targeted load or concurrency test shows gateway stays responsive while inference queues.
+
+**Status (2026-11-08):** `POST /v1/attendance/check-ins` → 202 + job id on BullMQ `attendance-check-in`; worker calls vision `/v1/match` then persists; gateway concurrency e2e + worker match e2e pass.
 
 ---
 
