@@ -177,6 +177,8 @@ React + TypeScript SPA at repo-root `frontend_crew_pulse/` (not under `services/
 
 UI guidance: project skill `.cursor/skills/frontend-ui-design/`, rule `.cursor/rules/frontend-react.mdc`, and (optional) Cursor Marketplace plugins listed in 6.1.
 
+**Substep progress:** 6.1 done → **next 6.2** → 6.3. Tick phase **6** only after 6.3 Done when.
+
 ### 6.1 Cursor UI skills, rules, and editor plugins
 
 Ensure agents and the IDE are set up for intentional frontend design before scaffolding UI screens:
@@ -187,6 +189,8 @@ Ensure agents and the IDE are set up for intentional frontend design before scaf
 4. **Manual (Marketplace):** open Cursor **Customize → Plugins** and install useful UI plugins such as [shadcn/ui](https://cursor.com/marketplace/shadcn) if you plan to use that component system; optional community UI skills from [cursor.directory](https://cursor.directory/).
 
 **Done when:** skill + rule exist in the repo; listed editor extensions are installed (`cursor --list-extensions`); Marketplace plugin installs noted for the developer (shadcn optional).
+
+**Status (2026-11-08):** Done when met — skill/rule committed on `dev` (`docs: add frontend skills`); editor extensions installed; local plugin `~/.cursor/plugins/local/crewpulse-frontend-ui/` present. Optional Marketplace shadcn still manual.
 
 ### 6.2 Scaffold React + TypeScript app
 
