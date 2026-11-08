@@ -48,6 +48,8 @@ services:
     environment:
       NODE_ENV: production
       API_GATEWAY_PORT: ${API_GATEWAY_PORT:-3000}
+      # Browser SPA (Vite) origins for local smoke; override via infrastructure/env/.env
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:4173,http://localhost:4173}
       # Compose network hostnames (host .env keeps localhost for non-Docker runs)
       DATABASE_URL: postgresql://${POSTGRES_USER:-crewpulse}:${POSTGRES_PASSWORD:-crewpulse_dev_change_me}@postgres:5432/${POSTGRES_DB:-crewpulse}
       REDIS_URL: redis://redis:6379

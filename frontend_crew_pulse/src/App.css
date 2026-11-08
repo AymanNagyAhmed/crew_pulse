@@ -58,6 +58,15 @@
   animation: home-rise 0.9s ease forwards 0.5s;
 }
 
+.home__cta-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  opacity: 0;
+  animation: home-rise 0.9s ease forwards 0.65s;
+}
+
 .home__cta {
   display: inline-flex;
   align-items: center;
@@ -68,9 +77,22 @@
   color: #041210;
   font: 600 0.95rem/1 var(--font-body);
   text-decoration: none;
-  opacity: 0;
-  animation: home-rise 0.9s ease forwards 0.65s;
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.home__status {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.home__status--ok {
+  color: color-mix(in srgb, var(--accent) 75%, var(--ink) 25%);
+}
+
+.home__status--down {
+  color: #e8a090;
 }
 
 .home__cta:hover {

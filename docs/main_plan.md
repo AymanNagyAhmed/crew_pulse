@@ -12,7 +12,7 @@ After each numbered step’s **Done when** passes: branch → commit → push �
 - [x] **3** vision-engine skeleton (FastAPI, health, detect/embed stub)
 - [x] **4** worker-node skeleton (NestJS/BullMQ consumer, health)
 - [x] **5** Launch the app / local run (compose up + all health checks documented) — **required before any challenge**
-- [ ] **6** Frontend app (`frontend_crew_pulse/`: React + TypeScript, UI skills)
+- [x] **6** Frontend app (`frontend_crew_pulse/`: React + TypeScript, UI skills)
 - [ ] **7** Cover challenges (`docs/plan_to_cover_challenges.md`; one branch/PR per challenge onto `dev`)
 
 Stop adding the “Next step” reply footer after phase **5** “Done when” passes. Do not start phase **7** (challenges) until **5** is ticked; prefer finishing phase **6** frontend skeleton before challenge UI work.
@@ -177,7 +177,7 @@ React + TypeScript SPA at repo-root `frontend_crew_pulse/` (not under `services/
 
 UI guidance: project skill `.cursor/skills/frontend-ui-design/`, rule `.cursor/rules/frontend-react.mdc`, and (optional) Cursor Marketplace plugins listed in 6.1.
 
-**Substep progress:** 6.1 done → 6.2 done → **next 6.3**. Tick phase **6** only after 6.3 Done when.
+**Substep progress:** 6.1 done → 6.2 done → 6.3 done. Phase **6** ticked after 6.3 Done when.
 
 ### 6.1 Cursor UI skills, rules, and editor plugins
 
@@ -215,6 +215,8 @@ Add `.env.example` with `VITE_API_BASE_URL=http://127.0.0.1:3000`, strict TS, an
 Document in root README (or `frontend_crew_pulse/README.md`): `make up` for API, then `cd frontend_crew_pulse && npm run dev`. Optional: Makefile `frontend-dev` target. One stub call to gateway health from the UI or a documented `curl` remains acceptable until real screens land.
 
 **Done when:** another engineer can open the SPA against a running stack; phase **6** checklist ticked.
+
+**Status (2026-11-08):** Root + SPA READMEs document `make up` → `make frontend-dev`; Makefile `frontend-dev`; home probes `/v1/health`; gateway `CORS_ORIGINS` for Vite; phase **6** ticked.
 
 ---
 
