@@ -1,0 +1,85 @@
+# On-prem edge stack for local face match when cloud RTT / Wi-Fi is unreliable (C10).
+# Boots Redis + vision-engine + nginx. Sync punches to cloud api-gateway when uplink returns.
+#
+#   make up-edge
+#   # or:
+#   docker compose --env-file infrastructure/env/.env \
+#     -f infrastructure/compose/docker-compose.edge.yml up -d
+#
+# Rules: infrastructure/docs/edge-sync.md
+
+name: crewpulse-edge
+
+services:
+  redis:
+    image: redis:8.2.11-alpine
+    container_name: crewpulse-edge-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${EDGE_REDIS_PORT:-16380}:6379"
+    volumes:
+      - crewpulse_edge_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  vision-engine:
+    build:
+      context: ../../services/vision-engine
+      dockerfile: Dockerfile
+    image: crewpulse/vision-engine:local
+    container_name: crewpulse-edge-vision
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: ${VISION_ENGINE_PORT:-8000}
+      DEEPFACE_HOME: /data
+      VISION_STUB: ${VISION_STUB:-true}
+      EDGE_MODE: "true"
+      FACE_MIN_SIZE_PX: ${FACE_MIN_SIZE_PX:-80}
+      FACE_MAX_BLUR: ${FACE_MAX_BLUR:-0.65}
+      FACE_MIN_LUMINANCE: ${FACE_MIN_LUMINANCE:-0.15}
+      FACE_MAX_LUMINANCE: ${FACE_MAX_LUMINANCE:-0.92}
+      FACE_MAX_YAW_DEG: ${FACE_MAX_YAW_DEG:-25}
+      FACE_MAX_PITCH_DEG: ${FACE_MAX_PITCH_DEG:-20}
+      PAD_ENABLED: ${PAD_ENABLED:-true}
+      PAD_MIN_SCORE: ${PAD_MIN_SCORE:-0.45}
+      OCCLUSION_ENABLED: ${OCCLUSION_ENABLED:-true}
+      OCCLUSION_MAX_SCORE: ${OCCLUSION_MAX_SCORE:-0.55}
+    ports:
+      - "127.0.0.1:${EDGE_VISION_PORT:-18000}:8000"
+    volumes:
+      - crewpulse_edge_deepface_data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  nginx:
+    image: nginx:1.28.0-alpine
+    container_name: crewpulse-edge-nginx
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${EDGE_NGINX_PORT:-18080}:80"
+    volumes:
+      - ../nginx/edge.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      vision-engine:
+        condition: service_healthy
+
+volumes:
+  crewpulse_edge_redis_data:
+  crewpulse_edge_deepface_data:

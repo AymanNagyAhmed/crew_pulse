@@ -25,7 +25,7 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 - [x] **C7** `7-biometric-privacy-and-compliance` — encrypted templates, retention, no vector logs
 - [x] **C8** `8-demographic-bias-and-fairness` — group-wise metrics + release gates
 - [x] **C9** `9-async-pipelines-and-end-to-end-latency` — SLOs, backpressure, idempotent jobs
-- [ ] **C10** `10-multi-venue-connectivity-and-edge` — offline / edge roster + sync
+- [x] **C10** `10-multi-venue-connectivity-and-edge` — offline / edge roster + sync
 - [x] **C11** `11-attendance-integrity-and-duplicates` — cooldown, idempotency, audit overrides
 - [ ] **C12** `12-digital-injection-and-deepfakes` — managed stations + mobile attestation policy
 
@@ -136,6 +136,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 **Cover by:** Local roster embedding cache + outbound attendance queue; sync rules (server authority for payroll); optional on-prem `vision-engine` profile; uplink crops/embeddings not raw 4K.
 
 **Done when:** Compose `edge` (or similar) profile boots local match path; offline punch syncs without duplicate payroll rows; sync/conflict rules documented.
+
+**Status (2026-11-08):** `docker-compose.edge.yml` + `make up-edge`; `POST /v1/edge/sync/punches` idempotent on `deviceEventId`; roster snapshot API; `infrastructure/docs/edge-sync.md`.
 
 ---
 

@@ -47,12 +47,16 @@ Deploy capture stations per [`docs/station-lighting-sop.md`](docs/station-lighti
 2. Ensure weights under a DeepFace home (`DEEPFACE_HOME` → `<home>/.deepface/weights`)
 3. Rebuild/recreate: `make up`
 
-Nginx is under Compose profile `edge`:
+Nginx on the **main** stack is under Compose profile `edge`:
 
 ```zsh
 docker compose --env-file infrastructure/env/.env -f infrastructure/compose/docker-compose.yml --profile edge up -d
 # /v1/ → api-gateway, /vision/ → vision-engine on 127.0.0.1:8080
 ```
+
+### On-prem edge stack (C10)
+
+Local match without cloud RTT (`make up-edge`): Redis + vision-engine + nginx on `18080` / `18000`. Offline punch sync + conflict rules: [`docs/edge-sync.md`](docs/edge-sync.md).
 
 ## Layout
 
