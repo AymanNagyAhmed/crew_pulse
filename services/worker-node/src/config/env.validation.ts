@@ -12,6 +12,10 @@ export type WorkerEnv = {
   DATABASE_URL: string;
   VISION_ENGINE_URL: string;
   ATTENDANCE_COOLDOWN_SECONDS: number;
+  VISION_CIRCUIT_FAILURE_THRESHOLD: number;
+  VISION_CIRCUIT_OPEN_MS: number;
+  CHECK_IN_QUEUE_MAX_WAITING: number;
+  CHECK_IN_QUEUE_WARN_DEPTH: number;
 };
 
 export function validateEnv(config: Record<string, unknown>): WorkerEnv {
@@ -30,6 +34,33 @@ export function validateEnv(config: Record<string, unknown>): WorkerEnv {
     throw new Error(`Invalid ATTENDANCE_COOLDOWN_SECONDS: ${cooldownRaw}`);
   }
 
+  const circuitThreshold = Number(
+    config.VISION_CIRCUIT_FAILURE_THRESHOLD ?? 5,
+  );
+  if (!Number.isInteger(circuitThreshold) || circuitThreshold < 1) {
+    throw new Error(
+      `Invalid VISION_CIRCUIT_FAILURE_THRESHOLD: ${String(config.VISION_CIRCUIT_FAILURE_THRESHOLD)}`,
+    );
+  }
+  const circuitOpenMs = Number(config.VISION_CIRCUIT_OPEN_MS ?? 30_000);
+  if (!Number.isInteger(circuitOpenMs) || circuitOpenMs < 100) {
+    throw new Error(
+      `Invalid VISION_CIRCUIT_OPEN_MS: ${String(config.VISION_CIRCUIT_OPEN_MS)}`,
+    );
+  }
+  const maxWaiting = Number(config.CHECK_IN_QUEUE_MAX_WAITING ?? 200);
+  if (!Number.isInteger(maxWaiting) || maxWaiting < 1) {
+    throw new Error(
+      `Invalid CHECK_IN_QUEUE_MAX_WAITING: ${String(config.CHECK_IN_QUEUE_MAX_WAITING)}`,
+    );
+  }
+  const warnDepth = Number(config.CHECK_IN_QUEUE_WARN_DEPTH ?? 50);
+  if (!Number.isInteger(warnDepth) || warnDepth < 0) {
+    throw new Error(
+      `Invalid CHECK_IN_QUEUE_WARN_DEPTH: ${String(config.CHECK_IN_QUEUE_WARN_DEPTH)}`,
+    );
+  }
+
   if (isTest) {
     return {
       NODE_ENV: nodeEnv,
@@ -42,6 +73,10 @@ export function validateEnv(config: Record<string, unknown>): WorkerEnv {
         config.VISION_ENGINE_URL ?? 'http://localhost:8000',
       ),
       ATTENDANCE_COOLDOWN_SECONDS: cooldown,
+      VISION_CIRCUIT_FAILURE_THRESHOLD: circuitThreshold,
+      VISION_CIRCUIT_OPEN_MS: circuitOpenMs,
+      CHECK_IN_QUEUE_MAX_WAITING: maxWaiting,
+      CHECK_IN_QUEUE_WARN_DEPTH: warnDepth,
     };
   }
 
@@ -58,5 +93,9 @@ export function validateEnv(config: Record<string, unknown>): WorkerEnv {
       config.VISION_ENGINE_URL as string | undefined,
     ),
     ATTENDANCE_COOLDOWN_SECONDS: cooldown,
+    VISION_CIRCUIT_FAILURE_THRESHOLD: circuitThreshold,
+    VISION_CIRCUIT_OPEN_MS: circuitOpenMs,
+    CHECK_IN_QUEUE_MAX_WAITING: maxWaiting,
+    CHECK_IN_QUEUE_WARN_DEPTH: warnDepth,
   };
 }

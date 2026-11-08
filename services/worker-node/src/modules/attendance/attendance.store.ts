@@ -60,6 +60,10 @@ export class AttendanceStore {
     return { status: 'written', record };
   }
 
+  findByIdempotency(key: string): AttendanceRecord | undefined {
+    return this.byIdempotency.get(key);
+  }
+
   count(): number {
     return this.byIdempotency.size;
   }

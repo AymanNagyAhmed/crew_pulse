@@ -3,9 +3,13 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Job } from 'bullmq';
 import { AttendanceStore } from '../modules/attendance/attendance.store.js';
+import { CaptureHistoryStore } from '../modules/attendance/capture-history.store.js';
 import { IdempotencyService } from '../modules/queues/idempotency.service.js';
 import { ATTENDANCE_CHECK_IN_QUEUE } from '../modules/queues/queue.constants.js';
-import { VisionClientService } from '../modules/vision/vision-client.service.js';
+import {
+  CircuitOpenError,
+  VisionClientService,
+} from '../modules/vision/vision-client.service.js';
 import type {
   AttendanceCheckInJob,
   AttendanceCheckInResult,
@@ -21,6 +25,7 @@ export class AttendanceCheckInProcessor extends WorkerHost {
     private readonly config: ConfigService,
     private readonly vision: VisionClientService,
     private readonly attendanceStore: AttendanceStore,
+    private readonly captureHistory: CaptureHistoryStore,
   ) {
     super();
   }
@@ -38,7 +43,7 @@ export class AttendanceCheckInProcessor extends WorkerHost {
       Math.max(cooldown * 2, 60),
     );
     if (!claimed) {
-      return { status: 'duplicate', idempotencyKey: payload.idempotencyKey };
+      return this.duplicateResult(payload.idempotencyKey);
     }
 
     let match;
@@ -51,20 +56,44 @@ export class AttendanceCheckInProcessor extends WorkerHost {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'vision error';
+      const circuitOpen = err instanceof CircuitOpenError;
       this.logger.warn(
         `check-in vision failed key=${payload.idempotencyKey}: ${message}`,
       );
-      return {
-        status: 'vision_error',
-        idempotencyKey: payload.idempotencyKey,
-        message,
-      };
-    } finally {
-      // C7: drop raw frame from Redis job payload after the vision call.
-      await this.scrubInFlightFrame(job);
+
+      const maxAttempts = job.opts.attempts ?? 1;
+      const isFinalAttempt = job.attemptsMade + 1 >= maxAttempts;
+      if (isFinalAttempt) {
+        this.captureHistory.record({
+          idempotencyKey: payload.idempotencyKey,
+          venueId: payload.venueId,
+          shiftId: payload.shiftId,
+          direction: payload.direction,
+          outcome: circuitOpen ? 'circuit_open' : 'vision_error',
+        });
+        // Only scrub when we will not retry — retries still need the frame.
+        await this.scrubInFlightFrame(job);
+      }
+
+      // Release so BullMQ backoff retries can re-claim after transient failure.
+      await this.idempotency.release(
+        ATTENDANCE_CHECK_IN_QUEUE,
+        payload.idempotencyKey,
+      );
+      throw err instanceof Error ? err : new Error(message);
     }
 
+    await this.scrubInFlightFrame(job);
+
     if (match.decision !== 'matched' || !match.candidates[0]) {
+      this.captureHistory.record({
+        idempotencyKey: payload.idempotencyKey,
+        venueId: payload.venueId,
+        shiftId: payload.shiftId,
+        direction: payload.direction,
+        outcome: match.decision,
+        bestScore: match.best_score,
+      });
       return {
         status: match.decision,
         decision: match.decision,
@@ -86,6 +115,16 @@ export class AttendanceCheckInProcessor extends WorkerHost {
 
     const result = this.attendanceStore.persist(persistPayload, cooldown);
     if (result.status === 'cooldown') {
+      this.captureHistory.record({
+        idempotencyKey: payload.idempotencyKey,
+        venueId: payload.venueId,
+        shiftId: payload.shiftId,
+        direction: payload.direction,
+        outcome: 'cooldown',
+        workerId,
+        bestScore: match.best_score,
+        attendanceId: result.record.id,
+      });
       return {
         status: 'cooldown',
         decision: 'matched',
@@ -96,6 +135,16 @@ export class AttendanceCheckInProcessor extends WorkerHost {
       };
     }
     if (result.status === 'duplicate') {
+      this.captureHistory.record({
+        idempotencyKey: payload.idempotencyKey,
+        venueId: payload.venueId,
+        shiftId: payload.shiftId,
+        direction: payload.direction,
+        outcome: 'duplicate',
+        workerId,
+        bestScore: match.best_score,
+        attendanceId: result.record.id,
+      });
       return {
         status: 'duplicate',
         decision: 'matched',
@@ -105,6 +154,17 @@ export class AttendanceCheckInProcessor extends WorkerHost {
         bestScore: match.best_score,
       };
     }
+
+    this.captureHistory.record({
+      idempotencyKey: payload.idempotencyKey,
+      venueId: payload.venueId,
+      shiftId: payload.shiftId,
+      direction: payload.direction,
+      outcome: 'matched',
+      workerId,
+      bestScore: match.best_score,
+      attendanceId: result.record.id,
+    });
 
     this.logger.log(
       `check-in matched attendance=${result.record.id} worker=${workerId}`,
@@ -117,6 +177,45 @@ export class AttendanceCheckInProcessor extends WorkerHost {
       attendanceId: result.record.id,
       bestScore: match.best_score,
     };
+  }
+
+  private duplicateResult(idempotencyKey: string): AttendanceCheckInResult {
+    const existing = this.attendanceStore.findByIdempotency(idempotencyKey);
+    if (existing) {
+      return {
+        status: 'duplicate',
+        decision: 'matched',
+        idempotencyKey,
+        workerId: existing.workerId,
+        attendanceId: existing.id,
+        bestScore: existing.score,
+      };
+    }
+    const capture = this.captureHistory.findByIdempotency(idempotencyKey);
+    if (capture) {
+      const status =
+        capture.outcome === 'circuit_open' ? 'vision_error' : capture.outcome;
+      return {
+        status: status as AttendanceCheckInResult['status'],
+        ...(capture.outcome === 'matched' ||
+        capture.outcome === 'needs_review' ||
+        capture.outcome === 'no_match' ||
+        capture.outcome === 'assisted_fallback'
+          ? { decision: capture.outcome }
+          : {}),
+        idempotencyKey,
+        ...(capture.workerId !== undefined
+          ? { workerId: capture.workerId }
+          : {}),
+        ...(capture.attendanceId !== undefined
+          ? { attendanceId: capture.attendanceId }
+          : {}),
+        ...(capture.bestScore !== undefined
+          ? { bestScore: capture.bestScore }
+          : {}),
+      };
+    }
+    return { status: 'duplicate', idempotencyKey };
   }
 
   /** Clear imageBase64 so completed job records are not long-lived face stores. */

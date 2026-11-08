@@ -7,4 +7,14 @@ export default () => ({
   ATTENDANCE_COOLDOWN_SECONDS: Number(
     process.env.ATTENDANCE_COOLDOWN_SECONDS ?? 60,
   ),
+  VISION_CIRCUIT_FAILURE_THRESHOLD: Number(
+    process.env.VISION_CIRCUIT_FAILURE_THRESHOLD ?? 5,
+  ),
+  VISION_CIRCUIT_OPEN_MS: Number(process.env.VISION_CIRCUIT_OPEN_MS ?? 30_000),
+  CHECK_IN_QUEUE_MAX_WAITING: Number(
+    process.env.CHECK_IN_QUEUE_MAX_WAITING ?? 200,
+  ),
+  CHECK_IN_QUEUE_WARN_DEPTH: Number(
+    process.env.CHECK_IN_QUEUE_WARN_DEPTH ?? 50,
+  ),
 });

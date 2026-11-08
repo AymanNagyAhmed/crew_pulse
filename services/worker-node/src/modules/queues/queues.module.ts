@@ -7,6 +7,7 @@ import { WebhookProcessor } from '../../processors/webhook.processor.js';
 import { AttendanceModule } from '../attendance/attendance.module.js';
 import { VisionModule } from '../vision/vision.module.js';
 import { IdempotencyService } from './idempotency.service.js';
+import { QueueMetricsService } from './queue-metrics.service.js';
 import {
   ATTENDANCE_CHECK_IN_QUEUE,
   ATTENDANCE_LOG_QUEUE,
@@ -32,10 +33,17 @@ import {
   ],
   providers: [
     IdempotencyService,
+    QueueMetricsService,
     AttendanceLogProcessor,
     AttendanceCheckInProcessor,
     WebhookProcessor,
   ],
-  exports: [BullModule, IdempotencyService, AttendanceModule],
+  exports: [
+    BullModule,
+    IdempotencyService,
+    QueueMetricsService,
+    AttendanceModule,
+    VisionModule,
+  ],
 })
 export class QueuesModule {}
