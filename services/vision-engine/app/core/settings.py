@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     face_min_luminance: float = 0.15
     face_max_luminance: float = 0.92
 
+    # Passive PAD (presentation attack detection) before embed.
+    pad_enabled: bool = True
+    # Live score 0 spoof → 1 live; reject below this for payroll-grade punches.
+    pad_min_score: float = 0.45
+
 
 @lru_cache
 def get_settings() -> Settings:

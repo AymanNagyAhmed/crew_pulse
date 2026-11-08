@@ -19,6 +19,7 @@ from app.schemas.vision import (
     FaceQuality,
 )
 from app.services.image_codec import decode_image_base64
+from app.services.pad import pad_reject_reason
 from app.services.quality import (
     face_quality_from_bgr,
     quality_reject_reason,
@@ -79,7 +80,15 @@ class DetectionService:
                     reject_reasons.append(code)
                 continue
 
-            # Embed only after quality gates; discard vector immediately.
+            pad_reject, pad_score = pad_reject_reason(face_bgr, settings)
+            if pad_reject is not None:
+                code = reject_code(pad_reject)
+                logger.info("pad_gate_reject reason=%s", pad_reject)
+                if code not in reject_reasons:
+                    reject_reasons.append(code)
+                continue
+
+            # Embed only after quality + PAD gates; discard vector immediately.
             reps = DeepFace.represent(
                 img_path=face_bgr,
                 model_name=settings.embedding_model,
@@ -105,6 +114,7 @@ class DetectionService:
                     detection_score=min(1.0, max(0.0, confidence or 0.99)),
                     quality=quality,
                     embedding_dim=embedding_dim,
+                    pad_score=pad_score,
                 )
             )
 
@@ -129,6 +139,7 @@ class DetectionService:
                 pitch_deg=-2.0,
             ),
             embedding_dim=STUB_EMBEDDING_DIM,
+            pad_score=0.92,
         )
         return DetectResponse(
             faces=[face],
