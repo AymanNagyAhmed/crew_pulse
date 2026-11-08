@@ -10,4 +10,6 @@ export type AttendanceRecord = {
   score?: number;
   idempotencyKey: string;
   createdAt: string;
+  /** Bound capture station when provided (C11). */
+  stationId?: string;
 };

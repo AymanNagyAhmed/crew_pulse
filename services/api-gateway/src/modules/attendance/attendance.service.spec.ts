@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
+import { AttendanceAuditStore } from './attendance-audit.store.js';
 import { AssistedAttendanceStore } from './assisted-attendance.store.js';
 import { AttendanceService } from './attendance.service.js';
 
@@ -19,12 +20,15 @@ describe('AttendanceService', () => {
             ? 'dev-qr-change-me'
             : key === 'CHECK_IN_QUEUE_MAX_WAITING'
               ? 200
-              : undefined,
+              : key === 'ATTENDANCE_REQUIRE_STATION'
+                ? 'false'
+                : undefined,
       ),
     };
     const service = new AttendanceService(
       queue as never,
       new AssistedAttendanceStore(),
+      new AttendanceAuditStore(),
       config as never,
     );
 
@@ -62,12 +66,17 @@ describe('AttendanceService', () => {
     };
     const config = {
       get: vi.fn((key: string) =>
-        key === 'CHECK_IN_QUEUE_MAX_WAITING' ? 200 : undefined,
+        key === 'CHECK_IN_QUEUE_MAX_WAITING'
+          ? 200
+          : key === 'ATTENDANCE_REQUIRE_STATION'
+            ? 'false'
+            : undefined,
       ),
     };
     const service = new AttendanceService(
       queue as never,
       new AssistedAttendanceStore(),
+      new AttendanceAuditStore(),
       config as never,
     );
 
@@ -104,12 +113,35 @@ describe('AttendanceService', () => {
     const service = new AttendanceService(
       queue as never,
       new AssistedAttendanceStore(),
+      new AttendanceAuditStore(),
       { get: vi.fn() } as never,
     );
 
     const status = await service.getJobStatus('chk_done');
     expect(status.state).toBe('matched');
     expect(status.queueState).toBe('completed');
+  });
+
+  it('records override as audit only without payroll write', () => {
+    const audit = new AttendanceAuditStore();
+    const service = new AttendanceService(
+      { add: vi.fn(), getJob: vi.fn() } as never,
+      new AssistedAttendanceStore(),
+      audit,
+      { get: vi.fn() } as never,
+    );
+    const result = service.recordOverride({
+      venueId: 'ven_1',
+      shiftId: 'shf_1',
+      workerId: 'wrk_1',
+      direction: 'in',
+      actorId: 'sup_1',
+      reason: 'manual door open after PAD fail',
+    });
+    expect(result.payrollWritten).toBe(false);
+    expect(result.auditId.startsWith('aud_')).toBe(true);
+    expect(audit.count()).toBe(1);
+    expect(service.list().total).toBe(0);
   });
 
   it('records assisted check-in with valid supervisor PIN', () => {
@@ -126,6 +158,7 @@ describe('AttendanceService', () => {
     const service = new AttendanceService(
       queue as never,
       new AssistedAttendanceStore(),
+      new AttendanceAuditStore(),
       config as never,
     );
 
@@ -158,6 +191,7 @@ describe('AttendanceService', () => {
     const service = new AttendanceService(
       queue as never,
       new AssistedAttendanceStore(),
+      new AttendanceAuditStore(),
       config as never,
     );
 

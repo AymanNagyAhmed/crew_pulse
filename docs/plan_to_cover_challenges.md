@@ -26,7 +26,7 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 - [x] **C8** `8-demographic-bias-and-fairness` — group-wise metrics + release gates
 - [x] **C9** `9-async-pipelines-and-end-to-end-latency` — SLOs, backpressure, idempotent jobs
 - [x] **C10** `10-multi-venue-connectivity-and-edge` — offline / edge roster + sync
-- [ ] **C11** `11-attendance-integrity-and-duplicates` — cooldown, idempotency, audit overrides
+- [x] **C11** `11-attendance-integrity-and-duplicates` — cooldown, idempotency, audit overrides
 - [ ] **C12** `12-digital-injection-and-deepfakes` — managed stations + mobile attestation policy
 
 ---
@@ -147,6 +147,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 **Cover by:** Idempotency keys `(workerId, venueId, shiftId, direction, timeBucket)`; per-venue cooldown; station/geofence binding; immutable audit of overrides and low-confidence accepts.
 
 **Done when:** Duplicate punches suppressed; override API writes audit only; unit/e2e cover cooldown + idempotency.
+
+**Status (2026-11-08):** Composite bucket + per-venue cooldown; station/geofence binding; `POST /v1/attendance/overrides` audit-only; `infrastructure/docs/attendance-integrity.md`.
 
 ---
 
