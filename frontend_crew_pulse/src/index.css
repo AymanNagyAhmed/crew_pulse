@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Sora:wght@400;500;600&display=swap');
+
+:root {
+  --brand: #f3ebe0;
+  --ink: #f7f3ec;
+  --muted: #c4b8a8;
+  --accent: #3d9a86;
+  --accent-strong: #2f7f6e;
+  --surface: #0e1a1c;
+  --surface-elevated: rgba(14, 26, 28, 0.55);
+  --focus: #e8c27a;
+  --font-brand: 'Fraunces', 'Times New Roman', serif;
+  --font-body: 'Sora', 'Helvetica Neue', sans-serif;
+  --space: clamp(1rem, 2.5vw, 2rem);
+  color-scheme: dark;
+  font-family: var(--font-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

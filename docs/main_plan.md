@@ -177,7 +177,7 @@ React + TypeScript SPA at repo-root `frontend_crew_pulse/` (not under `services/
 
 UI guidance: project skill `.cursor/skills/frontend-ui-design/`, rule `.cursor/rules/frontend-react.mdc`, and (optional) Cursor Marketplace plugins listed in 6.1.
 
-**Substep progress:** 6.1 done → **next 6.2** → 6.3. Tick phase **6** only after 6.3 Done when.
+**Substep progress:** 6.1 done → 6.2 done → **next 6.3**. Tick phase **6** only after 6.3 Done when.
 
 ### 6.1 Cursor UI skills, rules, and editor plugins
 
@@ -207,6 +207,8 @@ cd frontend_crew_pulse && npm install
 Add `.env.example` with `VITE_API_BASE_URL=http://127.0.0.1:3000`, strict TS, and a minimal home route that names **CrewPulse** (brand-first; apply `frontend-ui-design`).
 
 **Done when:** `npm run build` succeeds; `npm run dev` serves the app; folder is `frontend_crew_pulse/` at repo root.
+
+**Status (2026-11-08):** Scaffolded with Vite `react-ts`; React/react-dom **19.3.1** (latest stable); brand-first home; `.env.example` with `VITE_API_BASE_URL`; `npm run build` passes.
 
 ### 6.3 Wire smoke + README
 

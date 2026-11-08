@@ -1,0 +1,128 @@
+.home {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  display: grid;
+  align-items: end;
+}
+
+.home__visual {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, rgba(8, 16, 18, 0.82) 0%, rgba(8, 16, 18, 0.45) 42%, rgba(8, 16, 18, 0.2) 100%),
+    #0e1a1c url('/hero-venue.svg') center / cover no-repeat;
+  transform: scale(1.04);
+  animation: home-pan 18s ease-in-out infinite alternate;
+}
+
+.home__content {
+  position: relative;
+  z-index: 1;
+  width: min(40rem, 100%);
+  padding: calc(var(--space) * 2.5) var(--space) calc(var(--space) * 2);
+  background: linear-gradient(180deg, transparent, var(--surface-elevated) 28%);
+}
+
+.home__brand {
+  margin: 0 0 0.85rem;
+  font-family: var(--font-brand);
+  font-weight: 650;
+  font-size: clamp(2.75rem, 8vw, 4.75rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  color: var(--brand);
+  opacity: 0;
+  animation: home-rise 0.9s ease forwards 0.15s;
+}
+
+.home__headline {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  line-height: 1.35;
+  color: var(--ink);
+  opacity: 0;
+  animation: home-rise 0.9s ease forwards 0.35s;
+}
+
+.home__lede {
+  margin: 0 0 1.75rem;
+  max-width: 32ch;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--muted);
+  opacity: 0;
+  animation: home-rise 0.9s ease forwards 0.5s;
+}
+
+.home__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.85rem 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 65%, white 10%);
+  background: var(--accent);
+  color: #041210;
+  font: 600 0.95rem/1 var(--font-body);
+  text-decoration: none;
+  opacity: 0;
+  animation: home-rise 0.9s ease forwards 0.65s;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.home__cta:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  transform: translateY(-1px);
+}
+
+.home__cta:active {
+  transform: translateY(0);
+}
+
+.home__cta-mark {
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+
+.home__cta:hover .home__cta-mark {
+  transform: translateX(3px);
+}
+
+@keyframes home-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes home-pan {
+  from {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.08) translate3d(-1.5%, -1%, 0);
+  }
+}
+
+@media (max-width: 720px) {
+  .home {
+    align-items: stretch;
+  }
+
+  .home__content {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 100svh;
+    width: 100%;
+    padding-top: 40svh;
+  }
+}
