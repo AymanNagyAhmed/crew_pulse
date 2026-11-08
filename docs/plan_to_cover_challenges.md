@@ -27,7 +27,7 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 - [x] **C9** `9-async-pipelines-and-end-to-end-latency` — SLOs, backpressure, idempotent jobs
 - [x] **C10** `10-multi-venue-connectivity-and-edge` — offline / edge roster + sync
 - [x] **C11** `11-attendance-integrity-and-duplicates` — cooldown, idempotency, audit overrides
-- [ ] **C12** `12-digital-injection-and-deepfakes` — managed stations + mobile attestation policy
+- [x] **C12** `12-digital-injection-and-deepfakes` — managed stations + mobile attestation policy
 
 ---
 
@@ -158,6 +158,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 **Cover by:** Prefer managed kiosks (no virtual-camera drivers) for payroll-grade punches; mark BYOD/remote selfie as high risk (step-up, geo, active liveness, human review); device/pipeline anomaly hooks where feasible.
 
 **Done when:** Station vs mobile risk policy encoded (config + docs); high-risk path requires step-up or review; managed-station deploy notes exist.
+
+**Status (2026-11-08):** `captureSource` risk policy + step-up/review gates; worker `forceReview` → `needs_review` without payroll; `infrastructure/docs/managed-station-deploy.md`.
 
 ---
 

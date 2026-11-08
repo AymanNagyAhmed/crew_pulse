@@ -58,6 +58,79 @@ describe('AttendanceService', () => {
     );
   });
 
+  it('requires step-up or review for remote selfie check-ins', async () => {
+    const queue = {
+      add: vi.fn(),
+      getJob: vi.fn().mockResolvedValue(undefined),
+      getJobCounts: vi.fn().mockResolvedValue({ waiting: 0, delayed: 0 }),
+    };
+    const service = new AttendanceService(
+      queue as never,
+      new AssistedAttendanceStore(),
+      new AttendanceAuditStore(),
+      {
+        get: vi.fn((key: string) =>
+          key === 'CAPTURE_PAYROLL_ALLOWED_SOURCES'
+            ? 'managed_station'
+            : key === 'ATTENDANCE_REQUIRE_STATION'
+              ? 'false'
+              : undefined,
+        ),
+      } as never,
+    );
+
+    await expect(
+      service.enqueueCheckIn({
+        imageBase64: 'a'.repeat(16),
+        venueId: 'ven_1',
+        shiftId: 'shf_1',
+        direction: 'in',
+        captureSource: 'remote_selfie',
+        deviceAttestation: 'none',
+      }),
+    ).rejects.toMatchObject({ code: 'CAPTURE_STEP_UP_REQUIRED' });
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  it('enqueues high-risk capture for review when acceptReview is set', async () => {
+    const add = vi.fn().mockResolvedValue({ id: 'chk_review' });
+    const queue = {
+      add,
+      getJob: vi.fn().mockResolvedValue(undefined),
+      getJobCounts: vi.fn().mockResolvedValue({ waiting: 0, delayed: 0 }),
+    };
+    const service = new AttendanceService(
+      queue as never,
+      new AssistedAttendanceStore(),
+      new AttendanceAuditStore(),
+      {
+        get: vi.fn((key: string) =>
+          key === 'CHECK_IN_QUEUE_MAX_WAITING'
+            ? 200
+            : key === 'ATTENDANCE_REQUIRE_STATION'
+              ? 'false'
+              : undefined,
+        ),
+      } as never,
+    );
+
+    const result = await service.enqueueCheckIn({
+      imageBase64: 'a'.repeat(16),
+      venueId: 'ven_1',
+      shiftId: 'shf_1',
+      direction: 'in',
+      captureSource: 'mobile_byod',
+      acceptReview: true,
+    });
+    expect(result.forceReview).toBe(true);
+    expect(result.riskTier).toBe('high');
+    expect(add).toHaveBeenCalledWith(
+      'check-in',
+      expect.objectContaining({ forceReview: true }),
+      expect.any(Object),
+    );
+  });
+
   it('rejects enqueue when queue depth hits backpressure limit', async () => {
     const queue = {
       add: vi.fn(),

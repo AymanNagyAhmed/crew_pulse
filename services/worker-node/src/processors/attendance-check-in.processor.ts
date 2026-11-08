@@ -91,6 +91,31 @@ export class AttendanceCheckInProcessor extends WorkerHost {
 
     await this.scrubInFlightFrame(job);
 
+    // C12: high-risk / injection-suspect path — capture for review, never payroll.
+    if (payload.forceReview) {
+      this.captureHistory.record({
+        idempotencyKey: payload.idempotencyKey,
+        venueId: payload.venueId,
+        shiftId: payload.shiftId,
+        direction: payload.direction,
+        outcome: 'needs_review',
+        bestScore: match.best_score,
+        ...(match.candidates[0]
+          ? { workerId: match.candidates[0].worker_id }
+          : {}),
+      });
+      return {
+        status: 'needs_review',
+        decision: 'needs_review',
+        idempotencyKey: payload.idempotencyKey,
+        bestScore: match.best_score,
+        ...(match.candidates[0]
+          ? { workerId: match.candidates[0].worker_id }
+          : {}),
+        message: 'high_risk_capture_requires_human_review',
+      };
+    }
+
     if (match.decision !== 'matched' || !match.candidates[0]) {
       this.captureHistory.record({
         idempotencyKey: payload.idempotencyKey,

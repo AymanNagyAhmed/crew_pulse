@@ -66,6 +66,45 @@ describe('AttendanceCheckInProcessor', () => {
     expect(capture?.id).not.toBe(result.attendanceId);
   });
 
+  it('forceReview skips payroll write and returns needs_review', async () => {
+    const store = new AttendanceStore();
+    const captures = new CaptureHistoryStore();
+    const processor = new AttendanceCheckInProcessor(
+      {
+        tryClaim: vi.fn().mockResolvedValue(true),
+        release: vi.fn(),
+      } as unknown as IdempotencyService,
+      { get: () => 60 } as unknown as ConfigService,
+      {
+        match: vi.fn().mockResolvedValue({
+          decision: 'matched',
+          best_score: 0.95,
+          threshold: 0.75,
+          candidates: [{ worker_id: 'wrk_risk', score: 0.95 }],
+        }),
+      } as unknown as VisionClientService,
+      store,
+      captures,
+    );
+
+    const result = await processor.process(
+      makeJob({
+        idempotencyKey: 'chk_review',
+        imageBase64: 'abc',
+        venueId: 'ven_1',
+        shiftId: 'shf_1',
+        direction: 'in',
+        forceReview: true,
+        riskTier: 'high',
+        captureSource: 'remote_selfie',
+      }),
+    );
+    expect(result.status).toBe('needs_review');
+    expect(result.decision).toBe('needs_review');
+    expect(store.count()).toBe(0);
+    expect(captures.count()).toBe(1);
+  });
+
   it('returns no_match without writing attendance but records capture', async () => {
     const captures = new CaptureHistoryStore();
     const store = new AttendanceStore();
