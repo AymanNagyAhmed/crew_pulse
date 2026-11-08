@@ -3,6 +3,7 @@ export default () => ({
   WORKER_NODE_PORT: Number(process.env.WORKER_NODE_PORT ?? 3001),
   REDIS_URL: process.env.REDIS_URL,
   DATABASE_URL: process.env.DATABASE_URL,
+  VISION_ENGINE_URL: process.env.VISION_ENGINE_URL,
   ATTENDANCE_COOLDOWN_SECONDS: Number(
     process.env.ATTENDANCE_COOLDOWN_SECONDS ?? 60,
   ),

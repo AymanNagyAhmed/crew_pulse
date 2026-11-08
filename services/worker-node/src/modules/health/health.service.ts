@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { IdempotencyService } from '../queues/idempotency.service.js';
 import {
+  ATTENDANCE_CHECK_IN_QUEUE,
   ATTENDANCE_LOG_QUEUE,
   WEBHOOK_QUEUE,
 } from '../queues/queue.constants.js';
@@ -15,7 +16,11 @@ export class HealthService {
       service: 'worker-node',
       status: 'ok' as const,
       redis: pong === 'PONG' ? 'ok' : 'degraded',
-      queues: [ATTENDANCE_LOG_QUEUE, WEBHOOK_QUEUE],
+      queues: [
+        ATTENDANCE_LOG_QUEUE,
+        ATTENDANCE_CHECK_IN_QUEUE,
+        WEBHOOK_QUEUE,
+      ],
       timestamp: new Date().toISOString(),
     };
   }
