@@ -1,22 +1,28 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
+import { DomainException } from '../../common/exceptions/domain.exception.js';
 import {
   DEFAULT_FACE_MODEL_VERSION,
   FACE_EMBEDDING_DIM,
   PG_POOL,
 } from '../database/database.constants.js';
 import type { EnrollTemplatesDto } from './dto/enroll-templates.dto.js';
+import type { EraseBiometricsDto } from './dto/erase-biometrics.dto.js';
+import type { RetentionPurgeDto } from './dto/retention-purge.dto.js';
 import type { SearchGalleryDto } from './dto/search-gallery.dto.js';
+import type { SetRetentionDto } from './dto/set-retention.dto.js';
 import type { UpsertRosterDto } from './dto/upsert-roster.dto.js';
 import type { UpsertTemplateDto } from './dto/upsert-template.dto.js';
-import { l2Normalize, toPgVectorLiteral } from './embedding.util.js';
+import { cosineSimilarity, l2Normalize } from './embedding.util.js';
 import { assertEnrollmentQa } from './enrollment-qa.js';
+import { TemplateCryptoService } from './template-crypto.service.js';
 
 export type UpsertTemplateResult = {
   workerId: string;
   modelVersion: string;
   templateVersion: number;
   embeddingDim: number;
+  encryptionKid: string;
   created: boolean;
 };
 
@@ -31,6 +37,7 @@ export type ListedTemplate = {
   workerId: string;
   modelVersion: string;
   templateVersion: number;
+  encryptionKid: string;
   updatedAt: string;
 };
 
@@ -53,18 +60,42 @@ export type GallerySearchResult = {
   shiftId: string;
   modelVersion: string;
   embeddingDim: number;
-  index: 'hnsw';
+  /** Ciphertext at rest; roster decrypt + cosine in process (no plaintext HNSW). */
+  index: 'encrypted_roster';
   candidates: GallerySearchHit[];
+};
+
+export type EraseBiometricsResult = {
+  workerId: string;
+  templatesRemoved: number;
+  rosterRemoved: number;
+  erasedAt: string;
+  auditId: string;
+};
+
+export type SetRetentionResult = {
+  workerId: string;
+  retentionUntil: string;
+};
+
+export type RetentionPurgeResult = {
+  asOf: string;
+  workersPurged: number;
+  templatesRemoved: number;
+  items: { workerId: string; templatesRemoved: number; rosterRemoved: number }[];
 };
 
 @Injectable()
 export class GalleryService {
-  constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
+  constructor(
+    @Inject(PG_POOL) private readonly pool: Pool,
+    private readonly crypto: TemplateCryptoService,
+  ) {}
 
   async upsertTemplate(dto: UpsertTemplateDto): Promise<UpsertTemplateResult> {
     const normalized = l2Normalize(dto.embedding);
     const templateVersion = dto.templateVersion ?? 1;
-    const vectorLiteral = toPgVectorLiteral(normalized);
+    const { ciphertext, kid } = this.crypto.encrypt(normalized);
 
     const client = await this.pool.connect();
     try {
@@ -73,7 +104,8 @@ export class GalleryService {
         `INSERT INTO crewpulse.workers (worker_id, display_name)
          VALUES ($1, $2)
          ON CONFLICT (worker_id) DO UPDATE
-           SET display_name = COALESCE(EXCLUDED.display_name, crewpulse.workers.display_name)`,
+           SET display_name = COALESCE(EXCLUDED.display_name, crewpulse.workers.display_name),
+               biometrics_erased_at = NULL`,
         [dto.workerId, dto.displayName ?? null],
       );
 
@@ -85,12 +117,13 @@ export class GalleryService {
 
       await client.query(
         `INSERT INTO crewpulse.face_templates
-           (worker_id, model_version, template_version, embedding)
-         VALUES ($1, $2, $3, $4::vector)
+           (worker_id, model_version, template_version, embedding_ciphertext, encryption_kid)
+         VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (worker_id, model_version, template_version) DO UPDATE
-           SET embedding = EXCLUDED.embedding,
+           SET embedding_ciphertext = EXCLUDED.embedding_ciphertext,
+               encryption_kid = EXCLUDED.encryption_kid,
                updated_at = now()`,
-        [dto.workerId, dto.modelVersion, templateVersion, vectorLiteral],
+        [dto.workerId, dto.modelVersion, templateVersion, ciphertext, kid],
       );
       await client.query('COMMIT');
 
@@ -99,6 +132,7 @@ export class GalleryService {
         modelVersion: dto.modelVersion,
         templateVersion,
         embeddingDim: FACE_EMBEDDING_DIM,
+        encryptionKid: kid,
         created: existing.rowCount === 0,
       };
     } catch (err) {
@@ -150,7 +184,7 @@ export class GalleryService {
     modelVersion?: string,
   ): Promise<{ items: ListedTemplate[]; total: number }> {
     const params: unknown[] = [workerId];
-    let sql = `SELECT worker_id, model_version, template_version, updated_at
+    let sql = `SELECT worker_id, model_version, template_version, encryption_kid, updated_at
                FROM crewpulse.face_templates
                WHERE worker_id = $1`;
     if (modelVersion) {
@@ -163,6 +197,7 @@ export class GalleryService {
       worker_id: string;
       model_version: string;
       template_version: number;
+      encryption_kid: string;
       updated_at: Date;
     }>(sql, params);
 
@@ -170,6 +205,7 @@ export class GalleryService {
       workerId: row.worker_id,
       modelVersion: row.model_version,
       templateVersion: row.template_version,
+      encryptionKid: row.encryption_kid,
       updatedAt: new Date(row.updated_at).toISOString(),
     }));
     return { items, total: items.length };
@@ -232,50 +268,146 @@ export class GalleryService {
   async search(dto: SearchGalleryDto): Promise<GallerySearchResult> {
     const modelVersion = dto.modelVersion ?? DEFAULT_FACE_MODEL_VERSION;
     const topK = dto.topK ?? 5;
-    const probe = toPgVectorLiteral(l2Normalize(dto.embedding));
+    const probe = l2Normalize(dto.embedding);
 
+    const { rows } = await this.pool.query<{
+      worker_id: string;
+      model_version: string;
+      template_version: number;
+      embedding_ciphertext: Buffer;
+    }>(
+      `SELECT
+         t.worker_id,
+         t.model_version,
+         t.template_version,
+         t.embedding_ciphertext
+       FROM crewpulse.face_templates t
+       INNER JOIN crewpulse.shift_roster r
+         ON r.worker_id = t.worker_id
+        AND r.venue_id = $1
+        AND r.shift_id = $2
+       INNER JOIN crewpulse.workers w
+         ON w.worker_id = t.worker_id
+       WHERE t.model_version = $3
+         AND w.biometrics_erased_at IS NULL`,
+      [dto.venueId, dto.shiftId, modelVersion],
+    );
+
+    const bestByWorker = new Map<string, GallerySearchHit>();
+    for (const row of rows) {
+      const cipher = Buffer.isBuffer(row.embedding_ciphertext)
+        ? row.embedding_ciphertext
+        : Buffer.from(row.embedding_ciphertext);
+      const template = this.crypto.decrypt(cipher);
+      const score = cosineSimilarity(probe, template);
+      const prev = bestByWorker.get(row.worker_id);
+      if (!prev || score > prev.score) {
+        bestByWorker.set(row.worker_id, {
+          workerId: row.worker_id,
+          score,
+          modelVersion: row.model_version,
+          templateVersion: row.template_version,
+        });
+      }
+    }
+
+    const candidates = [...bestByWorker.values()]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK);
+
+    return {
+      venueId: dto.venueId,
+      shiftId: dto.shiftId,
+      modelVersion,
+      embeddingDim: FACE_EMBEDDING_DIM,
+      index: 'encrypted_roster',
+      candidates,
+    };
+  }
+
+  async setRetention(
+    workerId: string,
+    dto: SetRetentionDto,
+  ): Promise<SetRetentionResult> {
+    const retentionUntil = new Date(dto.retentionUntil);
+    if (Number.isNaN(retentionUntil.getTime())) {
+      throw new DomainException(
+        'INVALID_RETENTION_UNTIL',
+        'retentionUntil must be a valid ISO-8601 timestamp',
+        400,
+        [{ field: 'retentionUntil', issue: 'invalid ISO-8601' }],
+      );
+    }
+
+    const result = await this.pool.query(
+      `INSERT INTO crewpulse.workers (worker_id, biometric_retention_until)
+       VALUES ($1, $2)
+       ON CONFLICT (worker_id) DO UPDATE
+         SET biometric_retention_until = EXCLUDED.biometric_retention_until
+       RETURNING worker_id, biometric_retention_until`,
+      [workerId, retentionUntil.toISOString()],
+    );
+
+    return {
+      workerId: result.rows[0].worker_id as string,
+      retentionUntil: new Date(
+        result.rows[0].biometric_retention_until as Date,
+      ).toISOString(),
+    };
+  }
+
+  async eraseBiometrics(
+    workerId: string,
+    dto: EraseBiometricsDto = {},
+  ): Promise<EraseBiometricsResult> {
+    const removeFromRosters = dto.removeFromRosters !== false;
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
-      // Prefer HNSW with filtered iterative scan when the gallery grows.
-      await client.query('SET LOCAL hnsw.ef_search = 40');
-      await client.query(`SET LOCAL hnsw.iterative_scan = 'relaxed_order'`);
 
-      const { rows } = await client.query<{
-        worker_id: string;
-        score: string;
-        model_version: string;
-        template_version: number;
-      }>(
-        `SELECT
-           t.worker_id,
-           (1 - (t.embedding <=> $1::vector))::float8 AS score,
-           t.model_version,
-           t.template_version
-         FROM crewpulse.face_templates t
-         INNER JOIN crewpulse.shift_roster r
-           ON r.worker_id = t.worker_id
-          AND r.venue_id = $2
-          AND r.shift_id = $3
-         WHERE t.model_version = $4
-         ORDER BY t.embedding <=> $1::vector
-         LIMIT $5`,
-        [probe, dto.venueId, dto.shiftId, modelVersion, topK],
+      const deletedTemplates = await client.query(
+        `DELETE FROM crewpulse.face_templates WHERE worker_id = $1`,
+        [workerId],
       );
-      await client.query('COMMIT');
+      let rosterRemoved = 0;
+      if (removeFromRosters) {
+        const deletedRoster = await client.query(
+          `DELETE FROM crewpulse.shift_roster WHERE worker_id = $1`,
+          [workerId],
+        );
+        rosterRemoved = deletedRoster.rowCount ?? 0;
+      }
 
+      await client.query(
+        `INSERT INTO crewpulse.workers (worker_id, biometrics_erased_at, biometric_retention_until)
+         VALUES ($1, now(), NULL)
+         ON CONFLICT (worker_id) DO UPDATE
+           SET biometrics_erased_at = now(),
+               biometric_retention_until = NULL`,
+        [workerId],
+      );
+
+      const audit = await client.query<{ id: string; created_at: Date }>(
+        `INSERT INTO crewpulse.biometric_erasure_audit
+           (worker_id, action, templates_removed, roster_removed, requested_by, reason)
+         VALUES ($1, 'erase', $2, $3, $4, $5)
+         RETURNING id, created_at`,
+        [
+          workerId,
+          deletedTemplates.rowCount ?? 0,
+          rosterRemoved,
+          dto.requestedBy ?? null,
+          dto.reason ?? null,
+        ],
+      );
+
+      await client.query('COMMIT');
       return {
-        venueId: dto.venueId,
-        shiftId: dto.shiftId,
-        modelVersion,
-        embeddingDim: FACE_EMBEDDING_DIM,
-        index: 'hnsw',
-        candidates: rows.map((row) => ({
-          workerId: row.worker_id,
-          score: Number(row.score),
-          modelVersion: row.model_version,
-          templateVersion: row.template_version,
-        })),
+        workerId,
+        templatesRemoved: deletedTemplates.rowCount ?? 0,
+        rosterRemoved,
+        erasedAt: new Date(audit.rows[0]!.created_at).toISOString(),
+        auditId: audit.rows[0]!.id,
       };
     } catch (err) {
       await client.query('ROLLBACK');
@@ -285,17 +417,106 @@ export class GalleryService {
     }
   }
 
-  /** Test/ops helper: confirm the HNSW index exists. */
-  async hnswIndexExists(client?: PoolClient): Promise<boolean> {
+  async purgeExpired(dto: RetentionPurgeDto = {}): Promise<RetentionPurgeResult> {
+    const asOf = dto.asOf ? new Date(dto.asOf) : new Date();
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const due = await client.query<{ worker_id: string }>(
+        `SELECT worker_id FROM crewpulse.workers
+         WHERE biometric_retention_until IS NOT NULL
+           AND biometric_retention_until <= $1::timestamptz
+           AND biometrics_erased_at IS NULL`,
+        [asOf.toISOString()],
+      );
+
+      const items: RetentionPurgeResult['items'] = [];
+      let templatesRemoved = 0;
+
+      for (const row of due.rows) {
+        const erased = await this.eraseBiometricsInTx(client, row.worker_id, {
+          requestedBy: dto.requestedBy ?? 'retention_purge',
+          reason: 'biometric_retention_until elapsed',
+          action: 'retention_purge',
+        });
+        items.push({
+          workerId: row.worker_id,
+          templatesRemoved: erased.templatesRemoved,
+          rosterRemoved: erased.rosterRemoved,
+        });
+        templatesRemoved += erased.templatesRemoved;
+      }
+
+      await client.query('COMMIT');
+      return {
+        asOf: asOf.toISOString(),
+        workersPurged: items.length,
+        templatesRemoved,
+        items,
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  /** True when ciphertext column exists (C7 schema applied). */
+  async encryptedSchemaReady(client?: PoolClient): Promise<boolean> {
     const q = client ?? this.pool;
     const { rows } = await q.query<{ exists: boolean }>(
       `SELECT EXISTS (
          SELECT 1
-         FROM pg_indexes
-         WHERE schemaname = 'crewpulse'
-           AND indexname = 'face_templates_embedding_hnsw'
+         FROM information_schema.columns
+         WHERE table_schema = 'crewpulse'
+           AND table_name = 'face_templates'
+           AND column_name = 'embedding_ciphertext'
        ) AS exists`,
     );
     return Boolean(rows[0]?.exists);
+  }
+
+  private async eraseBiometricsInTx(
+    client: PoolClient,
+    workerId: string,
+    opts: {
+      requestedBy: string;
+      reason: string;
+      action: 'erase' | 'retention_purge';
+    },
+  ): Promise<{ templatesRemoved: number; rosterRemoved: number }> {
+    const deletedTemplates = await client.query(
+      `DELETE FROM crewpulse.face_templates WHERE worker_id = $1`,
+      [workerId],
+    );
+    const deletedRoster = await client.query(
+      `DELETE FROM crewpulse.shift_roster WHERE worker_id = $1`,
+      [workerId],
+    );
+    await client.query(
+      `UPDATE crewpulse.workers
+       SET biometrics_erased_at = now(),
+           biometric_retention_until = NULL
+       WHERE worker_id = $1`,
+      [workerId],
+    );
+    await client.query(
+      `INSERT INTO crewpulse.biometric_erasure_audit
+         (worker_id, action, templates_removed, roster_removed, requested_by, reason)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        workerId,
+        opts.action,
+        deletedTemplates.rowCount ?? 0,
+        deletedRoster.rowCount ?? 0,
+        opts.requestedBy,
+        opts.reason,
+      ],
+    );
+    return {
+      templatesRemoved: deletedTemplates.rowCount ?? 0,
+      rosterRemoved: deletedRoster.rowCount ?? 0,
+    };
   }
 }

@@ -27,6 +27,9 @@ describe('Gallery multi-template enrollment (C6)', () => {
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
     process.env.DATABASE_URL = DATABASE_URL;
+    process.env.BIOMETRIC_TEMPLATE_KEY =
+      process.env.BIOMETRIC_TEMPLATE_KEY ??
+      'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 
     moduleRef = await Test.createTestingModule({
       imports: [

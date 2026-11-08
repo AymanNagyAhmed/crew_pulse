@@ -1,3 +1,7 @@
+/** Local/dev only — 32 zero bytes; override in real deploys. */
+export const DEV_BIOMETRIC_TEMPLATE_KEY =
+  'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
+
 export default () => ({
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: Number(process.env.API_GATEWAY_PORT ?? process.env.PORT ?? 3000),
@@ -7,4 +11,7 @@ export default () => ({
   ASSISTED_SUPERVISOR_PIN:
     process.env.ASSISTED_SUPERVISOR_PIN ?? 'dev-pin-change-me',
   ASSISTED_QR_TOKENS: process.env.ASSISTED_QR_TOKENS ?? 'dev-qr-change-me',
+  ASSISTED_BADGE_TOKENS: process.env.ASSISTED_BADGE_TOKENS ?? 'dev-badge-change-me',
+  BIOMETRIC_TEMPLATE_KEY:
+    process.env.BIOMETRIC_TEMPLATE_KEY ?? DEV_BIOMETRIC_TEMPLATE_KEY,
 });

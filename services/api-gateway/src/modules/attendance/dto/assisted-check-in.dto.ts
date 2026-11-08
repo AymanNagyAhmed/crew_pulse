@@ -16,8 +16,8 @@ export class AssistedCheckInDto {
   @MinLength(1)
   workerId!: string;
 
-  @IsIn(['supervisor_pin', 'qr'])
-  method!: 'supervisor_pin' | 'qr';
+  @IsIn(['supervisor_pin', 'qr', 'badge'])
+  method!: 'supervisor_pin' | 'qr' | 'badge';
 
   @IsString()
   @MinLength(4)

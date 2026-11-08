@@ -32,6 +32,9 @@ describe('Gallery (e2e)', () => {
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
     process.env.DATABASE_URL = DATABASE_URL;
+    process.env.BIOMETRIC_TEMPLATE_KEY =
+      process.env.BIOMETRIC_TEMPLATE_KEY ??
+      'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -93,8 +96,16 @@ describe('Gallery (e2e)', () => {
       })
       .expect(200);
 
-    expect(searchRes.body.data.index).toBe('hnsw');
+    expect(searchRes.body.data.index).toBe('encrypted_roster');
     expect(searchRes.body.data.candidates[0]?.workerId).toBe(workerId);
     expect(JSON.stringify(searchRes.body)).not.toMatch(/"embedding":\[/);
+
+    const eraseRes = await request(app.getHttpServer())
+      .delete(`/v1/gallery/workers/${workerId}/biometrics`)
+      .send({ requestedBy: 'e2e', reason: 'privacy erase' })
+      .expect(200);
+
+    expect(eraseRes.body.data.templatesRemoved).toBeGreaterThanOrEqual(1);
+    expect(eraseRes.body.data.auditId).toBeTruthy();
   });
 });

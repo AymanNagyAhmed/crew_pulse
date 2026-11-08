@@ -17,6 +17,10 @@ export type AppEnv = {
   ASSISTED_SUPERVISOR_PIN?: string;
   /** Comma-separated station QR tokens for assisted check-ins */
   ASSISTED_QR_TOKENS?: string;
+  /** Comma-separated badge swipe tokens for non-biometric punches (C7) */
+  ASSISTED_BADGE_TOKENS?: string;
+  /** Base64 AES-256 key for face template ciphertext at rest (C7) */
+  BIOMETRIC_TEMPLATE_KEY?: string;
 };
 
 export function validateEnv(config: Record<string, unknown>): AppEnv {
@@ -43,6 +47,20 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
   const qrRaw = config.ASSISTED_QR_TOKENS;
   const assistedQr =
     typeof qrRaw === 'string' && qrRaw.trim() !== '' ? qrRaw.trim() : undefined;
+  const badgeRaw = config.ASSISTED_BADGE_TOKENS;
+  const assistedBadge =
+    typeof badgeRaw === 'string' && badgeRaw.trim() !== ''
+      ? badgeRaw.trim()
+      : undefined;
+  const keyRaw = config.BIOMETRIC_TEMPLATE_KEY;
+  const biometricKey =
+    typeof keyRaw === 'string' && keyRaw.trim() !== ''
+      ? keyRaw.trim()
+      : undefined;
+
+  /** Local/dev default — 32 zero bytes base64; never use in production. */
+  const defaultBiometricKey =
+    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 
   if (isTest) {
     return {
@@ -56,6 +74,8 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
       ...(corsOrigins !== undefined ? { CORS_ORIGINS: corsOrigins } : {}),
       ASSISTED_SUPERVISOR_PIN: assistedPin ?? 'dev-pin-change-me',
       ASSISTED_QR_TOKENS: assistedQr ?? 'dev-qr-change-me',
+      ASSISTED_BADGE_TOKENS: assistedBadge ?? 'dev-badge-change-me',
+      BIOMETRIC_TEMPLATE_KEY: biometricKey ?? defaultBiometricKey,
     };
   }
 
@@ -71,5 +91,7 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
     ...(corsOrigins !== undefined ? { CORS_ORIGINS: corsOrigins } : {}),
     ASSISTED_SUPERVISOR_PIN: assistedPin ?? 'dev-pin-change-me',
     ASSISTED_QR_TOKENS: assistedQr ?? 'dev-qr-change-me',
+    ASSISTED_BADGE_TOKENS: assistedBadge ?? 'dev-badge-change-me',
+    BIOMETRIC_TEMPLATE_KEY: biometricKey ?? defaultBiometricKey,
   };
 }
