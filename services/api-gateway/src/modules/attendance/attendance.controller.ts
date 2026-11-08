@@ -51,6 +51,13 @@ export class AttendanceController {
     return this.attendanceService.recordAssistedCheckIn(body, idempotencyKey);
   }
 
+  /** Queue depth / backpressure for pre-shift alerting (C9). */
+  @Get('queue-metrics')
+  @ResponseMessage('Check-in queue metrics')
+  queueMetrics() {
+    return this.attendanceService.getQueueMetrics();
+  }
+
   @Get('jobs/:jobId')
   @ResponseMessage('Check-in job status')
   getJob(@Param('jobId') jobId: string) {

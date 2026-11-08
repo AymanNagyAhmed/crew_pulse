@@ -21,6 +21,12 @@ export type AppEnv = {
   ASSISTED_BADGE_TOKENS?: string;
   /** Base64 AES-256 key for face template ciphertext at rest (C7) */
   BIOMETRIC_TEMPLATE_KEY?: string;
+  /** Reject new check-ins when waiting+delayed >= this (C9) */
+  CHECK_IN_QUEUE_MAX_WAITING?: number;
+  /** Warn / alert when depth reaches this before shift start (C9) */
+  CHECK_IN_QUEUE_WARN_DEPTH?: number;
+  /** Target p95 enqueue→decision latency in ms (C9 SLO) */
+  CHECK_IN_DECISION_SLO_P95_MS?: number;
 };
 
 export function validateEnv(config: Record<string, unknown>): AppEnv {
@@ -62,6 +68,10 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
   const defaultBiometricKey =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 
+  const maxWaiting = Number(config.CHECK_IN_QUEUE_MAX_WAITING ?? 200);
+  const warnDepth = Number(config.CHECK_IN_QUEUE_WARN_DEPTH ?? 50);
+  const sloP95 = Number(config.CHECK_IN_DECISION_SLO_P95_MS ?? 3000);
+
   if (isTest) {
     return {
       NODE_ENV: nodeEnv,
@@ -76,6 +86,9 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
       ASSISTED_QR_TOKENS: assistedQr ?? 'dev-qr-change-me',
       ASSISTED_BADGE_TOKENS: assistedBadge ?? 'dev-badge-change-me',
       BIOMETRIC_TEMPLATE_KEY: biometricKey ?? defaultBiometricKey,
+      CHECK_IN_QUEUE_MAX_WAITING: maxWaiting,
+      CHECK_IN_QUEUE_WARN_DEPTH: warnDepth,
+      CHECK_IN_DECISION_SLO_P95_MS: sloP95,
     };
   }
 
@@ -93,5 +106,8 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
     ASSISTED_QR_TOKENS: assistedQr ?? 'dev-qr-change-me',
     ASSISTED_BADGE_TOKENS: assistedBadge ?? 'dev-badge-change-me',
     BIOMETRIC_TEMPLATE_KEY: biometricKey ?? defaultBiometricKey,
+    CHECK_IN_QUEUE_MAX_WAITING: maxWaiting,
+    CHECK_IN_QUEUE_WARN_DEPTH: warnDepth,
+    CHECK_IN_DECISION_SLO_P95_MS: sloP95,
   };
 }

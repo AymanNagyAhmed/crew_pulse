@@ -80,9 +80,24 @@ describe('Attendance check-in (e2e)', () => {
       .get(`/v1/attendance/jobs/${key}`)
       .expect(200);
     expect(status.body.data.jobId).toBe(key);
-    expect(['waiting', 'delayed', 'active', 'completed', 'failed']).toContain(
-      status.body.data.state,
-    );
+    expect([
+      'queued',
+      'matched',
+      'needs_review',
+      'no_match',
+      'assisted_fallback',
+      'failed',
+      'duplicate',
+      'cooldown',
+    ]).toContain(status.body.data.state);
+    expect(status.body.data.queueState).toBeTruthy();
+
+    const metrics = await request(app.getHttpServer())
+      .get('/v1/attendance/queue-metrics')
+      .expect(200);
+    expect(metrics.body.data.queue).toBe(ATTENDANCE_CHECK_IN_QUEUE);
+    expect(typeof metrics.body.data.depth).toBe('number');
+    expect(metrics.body.data.sloP95DecisionMs).toBeGreaterThan(0);
   }, 30_000);
 
   it('stays responsive under concurrent check-ins while jobs queue', async () => {

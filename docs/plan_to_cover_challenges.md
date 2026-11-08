@@ -24,7 +24,7 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 - [x] **C6** `6-pose-angle-and-capture-quality` — capture QA + multi-template enrollment
 - [x] **C7** `7-biometric-privacy-and-compliance` — encrypted templates, retention, no vector logs
 - [x] **C8** `8-demographic-bias-and-fairness` — group-wise metrics + release gates
-- [ ] **C9** `9-async-pipelines-and-end-to-end-latency` — SLOs, backpressure, idempotent jobs
+- [x] **C9** `9-async-pipelines-and-end-to-end-latency` — SLOs, backpressure, idempotent jobs
 - [ ] **C10** `10-multi-venue-connectivity-and-edge` — offline / edge roster + sync
 - [ ] **C11** `11-attendance-integrity-and-duplicates` — cooldown, idempotency, audit overrides
 - [ ] **C12** `12-digital-injection-and-deepfakes` — managed stations + mobile attestation policy
@@ -125,6 +125,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 **Cover by:** Define SLOs (e.g. p95 decision); queue depth / backpressure; idempotent jobs; separate raw capture history from verified attendance; circuit breakers on vision HTTP.
 
 **Done when:** Job states (`queued` / `matched` / `needs_review`) exposed; duplicate delivery does not double-write; basic queue metrics or docs for alerting before shift start.
+
+**Status (2026-11-08):** UX job states on `GET /v1/attendance/jobs/:jobId`; capture history ≠ verified attendance; vision circuit breaker + claim release on transient failure; queue metrics + 503 backpressure; `infrastructure/docs/async-pipeline-slos.md`.
 
 ---
 

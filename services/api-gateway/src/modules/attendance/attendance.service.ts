@@ -17,6 +17,10 @@ import type {
   AttendanceCheckInJob,
   AttendanceCheckInResult,
 } from './attendance-check-in.job.js';
+import {
+  type CheckInUxState,
+  mapCheckInUxState,
+} from './check-in-job-state.js';
 import type { AssistedCheckInDto } from './dto/assisted-check-in.dto.js';
 import type { CreateCheckInDto } from './dto/create-check-in.dto.js';
 
@@ -29,10 +33,27 @@ export type EnqueueCheckInResult = {
 
 export type CheckInJobStatus = {
   jobId: string;
-  state: string;
+  /** Stable UX state for door clients (C9). */
+  state: CheckInUxState;
+  /** Raw BullMQ state for operators. */
+  queueState: string;
   idempotencyKey?: string;
   result?: AttendanceCheckInResult;
   failedReason?: string;
+};
+
+export type CheckInQueueMetrics = {
+  queue: typeof ATTENDANCE_CHECK_IN_QUEUE;
+  waiting: number;
+  active: number;
+  delayed: number;
+  failed: number;
+  completed: number;
+  depth: number;
+  maxWaiting: number;
+  warnDepth: number;
+  backpressure: 'ok' | 'warn' | 'rejecting';
+  sloP95DecisionMs: number;
 };
 
 export type AssistedCheckInResult = {
@@ -82,6 +103,8 @@ export class AttendanceService {
       };
     }
 
+    await this.assertQueueAcceptsWork();
+
     const payload: AttendanceCheckInJob = {
       idempotencyKey,
       imageBase64: dto.imageBase64,
@@ -121,13 +144,55 @@ export class AttendanceService {
       );
     }
 
-    const state = await job.getState();
+    const queueState = await job.getState();
+    const result = job.returnvalue;
     return {
       jobId: String(job.id),
-      state,
+      state: mapCheckInUxState(queueState, result),
+      queueState,
       idempotencyKey: job.data.idempotencyKey,
-      result: job.returnvalue,
+      result,
       failedReason: job.failedReason || undefined,
+    };
+  }
+
+  async getQueueMetrics(): Promise<CheckInQueueMetrics> {
+    const counts = await this.checkInQueue.getJobCounts(
+      'waiting',
+      'active',
+      'delayed',
+      'failed',
+      'completed',
+    );
+    const waiting = counts.waiting ?? 0;
+    const delayed = counts.delayed ?? 0;
+    const depth = waiting + delayed;
+    const maxWaiting =
+      this.config.get<number>('CHECK_IN_QUEUE_MAX_WAITING') ?? 200;
+    const warnDepth =
+      this.config.get<number>('CHECK_IN_QUEUE_WARN_DEPTH') ?? 50;
+    const sloP95DecisionMs =
+      this.config.get<number>('CHECK_IN_DECISION_SLO_P95_MS') ?? 3000;
+
+    let backpressure: CheckInQueueMetrics['backpressure'] = 'ok';
+    if (depth >= maxWaiting) {
+      backpressure = 'rejecting';
+    } else if (depth >= warnDepth) {
+      backpressure = 'warn';
+    }
+
+    return {
+      queue: ATTENDANCE_CHECK_IN_QUEUE,
+      waiting,
+      active: counts.active ?? 0,
+      delayed,
+      failed: counts.failed ?? 0,
+      completed: counts.completed ?? 0,
+      depth,
+      maxWaiting,
+      warnDepth,
+      backpressure,
+      sloP95DecisionMs,
     };
   }
 
@@ -194,5 +259,25 @@ export class AttendanceService {
       punchedAt: record.punchedAt,
       state: 'recorded',
     };
+  }
+
+  private async assertQueueAcceptsWork(): Promise<void> {
+    const maxWaiting =
+      this.config.get<number>('CHECK_IN_QUEUE_MAX_WAITING') ?? 200;
+    const counts = await this.checkInQueue.getJobCounts('waiting', 'delayed');
+    const depth = (counts.waiting ?? 0) + (counts.delayed ?? 0);
+    if (depth >= maxWaiting) {
+      throw new DomainException(
+        'CHECK_IN_QUEUE_BACKPRESSURE',
+        `Check-in queue depth ${depth} exceeds limit ${maxWaiting}; try again shortly or use assisted check-in`,
+        503,
+        [
+          {
+            field: 'queue',
+            issue: `depth=${depth} maxWaiting=${maxWaiting}`,
+          },
+        ],
+      );
+    }
   }
 }

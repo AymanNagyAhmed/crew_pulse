@@ -14,4 +14,13 @@ export default () => ({
   ASSISTED_BADGE_TOKENS: process.env.ASSISTED_BADGE_TOKENS ?? 'dev-badge-change-me',
   BIOMETRIC_TEMPLATE_KEY:
     process.env.BIOMETRIC_TEMPLATE_KEY ?? DEV_BIOMETRIC_TEMPLATE_KEY,
+  CHECK_IN_QUEUE_MAX_WAITING: Number(
+    process.env.CHECK_IN_QUEUE_MAX_WAITING ?? 200,
+  ),
+  CHECK_IN_QUEUE_WARN_DEPTH: Number(
+    process.env.CHECK_IN_QUEUE_WARN_DEPTH ?? 50,
+  ),
+  CHECK_IN_DECISION_SLO_P95_MS: Number(
+    process.env.CHECK_IN_DECISION_SLO_P95_MS ?? 3000,
+  ),
 });

@@ -35,6 +35,12 @@ export class IdempotencyService implements OnModuleDestroy {
     return result === 'OK';
   }
 
+  /** Release a claim so BullMQ can retry after a transient vision failure (C9). */
+  async release(namespace: string, key: string): Promise<void> {
+    const redisKey = `worker:idempotency:${namespace}:${key}`;
+    await this.redis.del(redisKey);
+  }
+
   async onModuleDestroy(): Promise<void> {
     await this.redis.quit();
   }

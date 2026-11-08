@@ -6,14 +6,20 @@ import { AttendanceService } from './attendance.service.js';
 describe('AttendanceService', () => {
   it('enqueues check-in and returns job id without awaiting match', async () => {
     const add = vi.fn().mockResolvedValue({ id: 'chk_abc' });
-    const queue = { add, getJob: vi.fn().mockResolvedValue(undefined) };
+    const queue = {
+      add,
+      getJob: vi.fn().mockResolvedValue(undefined),
+      getJobCounts: vi.fn().mockResolvedValue({ waiting: 0, delayed: 0 }),
+    };
     const config = {
       get: vi.fn((key: string) =>
         key === 'ASSISTED_SUPERVISOR_PIN'
           ? 'dev-pin-change-me'
           : key === 'ASSISTED_QR_TOKENS'
             ? 'dev-qr-change-me'
-            : undefined,
+            : key === 'CHECK_IN_QUEUE_MAX_WAITING'
+              ? 200
+              : undefined,
       ),
     };
     const service = new AttendanceService(
@@ -46,6 +52,64 @@ describe('AttendanceService', () => {
       }),
       expect.objectContaining({ jobId: 'chk_abc' }),
     );
+  });
+
+  it('rejects enqueue when queue depth hits backpressure limit', async () => {
+    const queue = {
+      add: vi.fn(),
+      getJob: vi.fn().mockResolvedValue(undefined),
+      getJobCounts: vi.fn().mockResolvedValue({ waiting: 200, delayed: 0 }),
+    };
+    const config = {
+      get: vi.fn((key: string) =>
+        key === 'CHECK_IN_QUEUE_MAX_WAITING' ? 200 : undefined,
+      ),
+    };
+    const service = new AttendanceService(
+      queue as never,
+      new AssistedAttendanceStore(),
+      config as never,
+    );
+
+    await expect(
+      service.enqueueCheckIn({
+        imageBase64: 'a'.repeat(16),
+        venueId: 'ven_1',
+        shiftId: 'shf_1',
+        direction: 'in',
+      }),
+    ).rejects.toMatchObject({
+      code: 'CHECK_IN_QUEUE_BACKPRESSURE',
+      statusCode: 503,
+    } satisfies Partial<DomainException>);
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  it('maps completed job status to UX state matched', async () => {
+    const queue = {
+      getJob: vi.fn().mockResolvedValue({
+        id: 'chk_done',
+        data: { idempotencyKey: 'chk_done' },
+        returnvalue: {
+          status: 'matched',
+          decision: 'matched',
+          idempotencyKey: 'chk_done',
+          workerId: 'wrk_1',
+          attendanceId: 'att_1',
+        },
+        failedReason: undefined,
+        getState: vi.fn().mockResolvedValue('completed'),
+      }),
+    };
+    const service = new AttendanceService(
+      queue as never,
+      new AssistedAttendanceStore(),
+      { get: vi.fn() } as never,
+    );
+
+    const status = await service.getJobStatus('chk_done');
+    expect(status.state).toBe('matched');
+    expect(status.queueState).toBe('completed');
   });
 
   it('records assisted check-in with valid supervisor PIN', () => {
