@@ -35,6 +35,7 @@ class MatchingService:
                 face=None,
                 model_version=detect.model_version,
                 stub=detect.stub,
+                reject_reasons=list(detect.reject_reasons),
             )
 
         worker_ids = payload.candidate_worker_ids or ["worker_stub_001"]
@@ -60,4 +61,5 @@ class MatchingService:
             face=primary,
             model_version=detect.model_version,
             stub=detect.stub or get_settings().vision_stub,
+            reject_reasons=[],
         )

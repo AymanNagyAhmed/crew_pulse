@@ -35,6 +35,10 @@ Fresh Postgres runs `migrations/001_init.sql` (enables `vector`, creates `crewpu
 
 Compose injects service DNS (`postgres`, `redis`, `vision-engine`) into container env. The localhost URLs in `.env` remain for host-side `npm` / `uvicorn` runs.
 
+### Station lighting (C2)
+
+Deploy capture stations per [`docs/station-lighting-sop.md`](docs/station-lighting-sop.md). Vision rejects `face_too_dark` / `face_too_bright` (and blur/size) **before embed**; tune `FACE_MIN_LUMINANCE`, `FACE_MAX_LUMINANCE`, `FACE_MAX_BLUR`, `FACE_MIN_SIZE_PX`.
+
 ### Vision models
 
 `VISION_STUB=true` (default) boots without DeepFace weights. For real detection:
@@ -56,3 +60,4 @@ docker compose --env-file infrastructure/env/.env -f infrastructure/compose/dock
 - `migrations/` — SQL init / future migrations
 - `nginx/` — reverse-proxy (`edge` profile)
 - `env/.env.example` — template; real `.env` is gitignored
+- `docs/station-lighting-sop.md` — capture-station lighting + quality-gate coaching

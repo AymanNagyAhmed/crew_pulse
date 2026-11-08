@@ -7,8 +7,8 @@ Peak-load check-ins: **api-gateway** accepts `POST /v1/attendance/check-ins` (20
 |--------|------|---------|
 | `GET` | `/health` | Liveness |
 | `GET` | `/ready` | Readiness (model load) |
-| `POST` | `/v1/detect` | Face box + quality + **embedding length only** |
-| `POST` | `/v1/match` | Roster-scoped 1:N; returns `worker_id` + scores |
+| `POST` | `/v1/detect` | Face box + quality + **embedding length only**; `reject_reasons` when gates fail |
+| `POST` | `/v1/match` | Roster-scoped 1:N; returns `worker_id` + scores; propagates `reject_reasons` |
 
 ## Rules for the gateway client
 
@@ -17,5 +17,6 @@ Peak-load check-ins: **api-gateway** accepts `POST /v1/attendance/check-ins` (20
 - Treat `decision` as advisory input to attendance policy (`matched` / `no_match` / `needs_review`), not a final payroll write.
 - **Never** expect or log raw embedding vectors from these responses (`embedding_dim` / scores only).
 - `stub: false` when RetinaFace/Facenet512 is live; `VISION_STUB=true` forces stubs. Do not special-case beyond metrics.
+- Quality gates (`face_too_dark`, `face_too_bright`, `face_too_blurry`, `face_too_small`) reject **before embed**. Coach from `reject_reasons`; do not force match. Station lighting: `infrastructure/docs/station-lighting-sop.md`.
 
 OpenAPI: `{VISION_ENGINE_URL}/docs` or `/openapi.json` (`operationId`s `vision.detect`, `vision.match`).

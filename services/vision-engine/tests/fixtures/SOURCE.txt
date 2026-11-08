@@ -1,2 +1,6 @@
 sample_face.jpg is a resized copy of DeepFace's MIT-licensed unit fixture:
 https://github.com/serengil/deepface/blob/master/tests/unit/dataset/img1.jpg
+
+face_too_dark.jpg / face_too_bright.jpg are synthetic luminance variants of
+sample_face.jpg (scripts/make_lighting_fixtures.py) for C2 quality-gate tests.
+They are not biometric enrollment samples.

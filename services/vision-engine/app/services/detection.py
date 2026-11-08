@@ -19,7 +19,11 @@ from app.schemas.vision import (
     FaceQuality,
 )
 from app.services.image_codec import decode_image_base64
-from app.services.quality import face_quality_from_bgr, quality_reject_reason
+from app.services.quality import (
+    face_quality_from_bgr,
+    quality_reject_reason,
+    reject_code,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +57,7 @@ class DetectionService:
         extracted = DeepFace.extract_faces(img_path=image, **extract_kwargs)
 
         faces: list[DetectedFace] = []
+        reject_reasons: list[str] = []
         for item in extracted:
             confidence = float(item.get("confidence") or 0.0)
             if confidence <= 0.0 and item.get("facial_area", {}).get("w", 0) == 0:
@@ -68,7 +73,10 @@ class DetectionService:
             quality = face_quality_from_bgr(face_bgr)
             reject = quality_reject_reason(quality, settings)
             if reject is not None:
+                code = reject_code(reject)
                 logger.info("quality_gate_reject reason=%s", reject)
+                if code not in reject_reasons:
+                    reject_reasons.append(code)
                 continue
 
             # Embed only after quality gates; discard vector immediately.
@@ -104,6 +112,7 @@ class DetectionService:
             faces=faces,
             model_version=REAL_MODEL_VERSION,
             stub=False,
+            reject_reasons=reject_reasons,
         )
 
     def _stub_detect(self, payload: DetectRequest) -> DetectResponse:
@@ -125,6 +134,7 @@ class DetectionService:
             faces=[face],
             model_version=STUB_MODEL_VERSION,
             stub=True,
+            reject_reasons=[],
         )
 
 

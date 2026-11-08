@@ -17,7 +17,7 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 ## Progress checklist
 
 - [x] **C1** `1-high-throughput-shift-spikes` — queue & decouple under shift spikes
-- [ ] **C2** `2-low-light-and-harsh-illumination` — luminance / quality gates + deploy lighting SOP
+- [x] **C2** `2-low-light-and-harsh-illumination` — luminance / quality gates + deploy lighting SOP
 - [ ] **C3** `3-presentation-attacks-and-liveness` — PAD / liveness before match
 - [ ] **C4** `4-scaling-vector-search` — pgvector HNSW + venue/shift-scoped 1:N
 - [ ] **C5** `5-ppe-masks-and-occlusion` — occlusion-aware match + assisted fallback
@@ -48,6 +48,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 **Cover by:** Reject frames below luminance / face-quality thresholds with a coachable error; document station lighting SOP in `infrastructure/` or README deploy notes; keep bad frames out of match.
 
 **Done when:** Fixture dark/overexposed images are rejected before embed; SOP doc exists; unit/integration tests cover quality gate outcomes.
+
+**Status (2026-11-08):** Dark/bright fixtures + `reject_reasons` on detect/match; embed skipped on gate fail; `infrastructure/docs/station-lighting-sop.md`; `tests/test_quality.py`.
 
 ---
 

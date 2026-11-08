@@ -34,12 +34,18 @@ def face_quality_from_bgr(face_bgr: np.ndarray) -> FaceQuality:
 
 
 def quality_reject_reason(quality: FaceQuality, settings: Settings) -> str | None:
+    """Return the first failing gate. Lighting (luminance) before blur for coachable SOP."""
     if quality.face_size_px < settings.face_min_size_px:
         return f"face_too_small:{quality.face_size_px}<{settings.face_min_size_px}"
-    if quality.blur > settings.face_max_blur:
-        return f"face_too_blurry:{quality.blur}>{settings.face_max_blur}"
     if quality.luminance < settings.face_min_luminance:
         return f"face_too_dark:{quality.luminance}<{settings.face_min_luminance}"
     if quality.luminance > settings.face_max_luminance:
         return f"face_too_bright:{quality.luminance}>{settings.face_max_luminance}"
+    if quality.blur > settings.face_max_blur:
+        return f"face_too_blurry:{quality.blur}>{settings.face_max_blur}"
     return None
+
+
+def reject_code(reason: str) -> str:
+    """Stable coachable code prefix before the ':' detail suffix."""
+    return reason.split(":", 1)[0]
