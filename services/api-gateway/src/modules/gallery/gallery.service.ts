@@ -85,6 +85,18 @@ export type RetentionPurgeResult = {
   items: { workerId: string; templatesRemoved: number; rosterRemoved: number }[];
 };
 
+/** Edge roster cache snapshot — ids + template metadata only (no vectors) (C10). */
+export type EdgeRosterSnapshot = {
+  venueId: string;
+  shiftId: string;
+  fetchedAt: string;
+  workers: {
+    workerId: string;
+    templateCount: number;
+    modelVersions: string[];
+  }[];
+};
+
 @Injectable()
 export class GalleryService {
   constructor(
@@ -263,6 +275,47 @@ export class GalleryService {
     } finally {
       client.release();
     }
+  }
+
+  /**
+   * Compact roster for edge nodes to cache eligibility locally (C10).
+   * Never includes embedding ciphertext or plaintext vectors.
+   */
+  async listEdgeRoster(
+    venueId: string,
+    shiftId: string,
+  ): Promise<EdgeRosterSnapshot> {
+    const { rows } = await this.pool.query<{
+      worker_id: string;
+      template_count: string;
+      model_versions: string[] | null;
+    }>(
+      `SELECT r.worker_id,
+              COUNT(t.template_version)::text AS template_count,
+              COALESCE(
+                array_agg(DISTINCT t.model_version)
+                  FILTER (WHERE t.model_version IS NOT NULL),
+                '{}'
+              ) AS model_versions
+         FROM crewpulse.shift_roster r
+         LEFT JOIN crewpulse.face_templates t
+           ON t.worker_id = r.worker_id
+        WHERE r.venue_id = $1 AND r.shift_id = $2
+        GROUP BY r.worker_id
+        ORDER BY r.worker_id`,
+      [venueId, shiftId],
+    );
+
+    return {
+      venueId,
+      shiftId,
+      fetchedAt: new Date().toISOString(),
+      workers: rows.map((row) => ({
+        workerId: row.worker_id,
+        templateCount: Number(row.template_count) || 0,
+        modelVersions: row.model_versions ?? [],
+      })),
+    };
   }
 
   async search(dto: SearchGalleryDto): Promise<GallerySearchResult> {
