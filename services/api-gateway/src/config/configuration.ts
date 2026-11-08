@@ -23,4 +23,6 @@ export default () => ({
   CHECK_IN_DECISION_SLO_P95_MS: Number(
     process.env.CHECK_IN_DECISION_SLO_P95_MS ?? 3000,
   ),
+  CAPTURE_PAYROLL_ALLOWED_SOURCES:
+    process.env.CAPTURE_PAYROLL_ALLOWED_SOURCES ?? 'managed_station',
 });

@@ -5,6 +5,10 @@ export type AttendanceCheckInJob = {
   shiftId: string;
   direction: 'in' | 'out';
   candidateWorkerIds?: string[];
+  /** C12: high-risk capture queued for human review — no payroll write. */
+  forceReview?: boolean;
+  captureSource?: 'managed_station' | 'mobile_byod' | 'remote_selfie';
+  riskTier?: 'payroll' | 'high';
 };
 
 export type AttendanceCheckInResult = {

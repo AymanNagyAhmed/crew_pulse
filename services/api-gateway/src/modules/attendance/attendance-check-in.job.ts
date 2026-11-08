@@ -6,6 +6,10 @@ export type AttendanceCheckInJob = {
   shiftId: string;
   direction: 'in' | 'out';
   candidateWorkerIds?: string[];
+  /** C12: when true, worker must not write payroll — return needs_review. */
+  forceReview?: boolean;
+  captureSource?: 'managed_station' | 'mobile_byod' | 'remote_selfie';
+  riskTier?: 'payroll' | 'high';
 };
 
 export type AttendanceCheckInResult = {

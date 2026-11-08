@@ -21,6 +21,10 @@ import {
   type CheckInUxState,
   mapCheckInUxState,
 } from './check-in-job-state.js';
+import {
+  evaluateCaptureRisk,
+  parsePayrollAllowedSources,
+} from './capture-risk-policy.js';
 import type { AssistedCheckInDto } from './dto/assisted-check-in.dto.js';
 import type { CreateCheckInDto } from './dto/create-check-in.dto.js';
 
@@ -29,6 +33,9 @@ export type EnqueueCheckInResult = {
   idempotencyKey: string;
   queue: typeof ATTENDANCE_CHECK_IN_QUEUE;
   state: 'queued';
+  riskTier?: 'payroll' | 'high';
+  captureSource?: string;
+  forceReview?: boolean;
 };
 
 export type CheckInJobStatus = {
@@ -103,6 +110,7 @@ export class AttendanceService {
       };
     }
 
+    const risk = this.resolveCaptureRisk(dto);
     await this.assertQueueAcceptsWork();
 
     const payload: AttendanceCheckInJob = {
@@ -114,6 +122,9 @@ export class AttendanceService {
       ...(dto.candidateWorkerIds?.length
         ? { candidateWorkerIds: dto.candidateWorkerIds }
         : {}),
+      captureSource: risk.captureSource,
+      riskTier: risk.tier,
+      ...(risk.forceReview ? { forceReview: true } : {}),
     };
 
     // Short-lived in-flight frames (C7): age-cap completed/failed jobs so
@@ -131,6 +142,9 @@ export class AttendanceService {
       idempotencyKey,
       queue: ATTENDANCE_CHECK_IN_QUEUE,
       state: 'queued',
+      riskTier: risk.tier,
+      captureSource: risk.captureSource,
+      ...(risk.forceReview ? { forceReview: true } : {}),
     };
   }
 
@@ -259,6 +273,78 @@ export class AttendanceService {
       punchedAt: record.punchedAt,
       state: 'recorded',
     };
+  }
+
+  /**
+   * C12: managed stations are payroll-grade; BYOD / remote selfie need step-up or review.
+   */
+  private resolveCaptureRisk(dto: CreateCheckInDto) {
+    const decision = evaluateCaptureRisk({
+      captureSource: dto.captureSource,
+      deviceAttestation: dto.deviceAttestation,
+      deviceModel: dto.deviceModel,
+      pipelineHint: dto.pipelineHint,
+      anomalyFlags: dto.anomalyFlags,
+      payrollAllowedSources: parsePayrollAllowedSources(
+        this.config.get<string>('CAPTURE_PAYROLL_ALLOWED_SOURCES'),
+      ),
+    });
+
+    if (decision.tier === 'payroll') {
+      return { ...decision, forceReview: false as const };
+    }
+
+    if (dto.stepUp) {
+      const supervisorPin =
+        this.config.get<string>('ASSISTED_SUPERVISOR_PIN') ??
+        'dev-pin-change-me';
+      const qrTokens = parseTokenList(
+        this.config.get<string>('ASSISTED_QR_TOKENS') ?? 'dev-qr-change-me',
+      );
+      const badgeTokens = parseTokenList(
+        this.config.get<string>('ASSISTED_BADGE_TOKENS') ?? 'dev-badge-change-me',
+      );
+      const ok = verifyAssistedCredential({
+        method: dto.stepUp.method,
+        credential: dto.stepUp.credential,
+        supervisorPin,
+        qrTokens,
+        badgeTokens,
+      });
+      if (!ok) {
+        throw new DomainException(
+          'CAPTURE_STEP_UP_INVALID',
+          'Step-up credential rejected for high-risk capture',
+          401,
+          [{ field: 'stepUp.credential', issue: 'invalid' }],
+        );
+      }
+      // Supervised capture may proceed toward match (not forced review).
+      return {
+        tier: 'high' as const,
+        captureSource: decision.captureSource,
+        requireStepUp: false as const,
+        forceReview: false as const,
+        reasons: decision.reasons,
+      };
+    }
+
+    if (dto.acceptReview === true) {
+      return {
+        tier: 'high' as const,
+        captureSource: decision.captureSource,
+        requireStepUp: false as const,
+        forceReview: true as const,
+        reasons: decision.reasons,
+      };
+    }
+
+    throw new DomainException(
+      'CAPTURE_STEP_UP_REQUIRED',
+      'High-risk capture (BYOD / remote selfie / injection signals) requires stepUp or acceptReview',
+      403,
+      decision.reasons.map((r) => ({ field: 'captureSource', issue: r })),
+    );
   }
 
   private async assertQueueAcceptsWork(): Promise<void> {

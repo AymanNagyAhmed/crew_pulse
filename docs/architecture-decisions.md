@@ -15,6 +15,6 @@ Maps `docs/challenges/` to the component that owns the primary mitigation. Detai
 | 9 | Async pipelines / latency | `worker-node` + Redis/BullMQ | SLOs, backpressure, idempotent jobs, raw vs verified history |
 | 10 | Multi-venue connectivity / edge | Edge profile (deferred) | Local roster cache + sync; optional on-prem vision |
 | 11 | Attendance integrity / duplicates | `worker-node` + attendance module | Cooldown, idempotency keys, station binding, audit overrides |
-| 12 | Digital injection / deepfakes | Ops policy + mobile SDK | Prefer locked kiosks; attest camera path for BYOD |
+| 12 | Digital injection / deepfakes | `api-gateway` capture risk + ops | Managed stations payroll-grade; BYOD/selfie step-up or review |
 
 Kafka KRaft is deferred until BullMQ+Redis is insufficient (see `docs/main_plan.md` deferred list).
