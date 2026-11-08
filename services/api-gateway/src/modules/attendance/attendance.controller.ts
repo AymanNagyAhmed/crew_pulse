@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
 import { AttendanceService } from './attendance.service.js';
+import { AssistedCheckInDto } from './dto/assisted-check-in.dto.js';
 import { CreateCheckInDto } from './dto/create-check-in.dto.js';
 
 @Controller('attendance')
@@ -34,6 +35,20 @@ export class AttendanceController {
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
     return this.attendanceService.enqueueCheckIn(body, idempotencyKey);
+  }
+
+  /**
+   * Assisted fallback when vision returns assisted_fallback (heavy PPE / mask).
+   * Supervisor PIN or station QR — never a silent biometric false reject.
+   */
+  @Post('assisted-check-ins')
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Assisted check-in recorded')
+  assistedCheckIn(
+    @Body() body: AssistedCheckInDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.attendanceService.recordAssistedCheckIn(body, idempotencyKey);
   }
 
   @Get('jobs/:jobId')

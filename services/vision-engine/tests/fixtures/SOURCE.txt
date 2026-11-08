@@ -6,4 +6,7 @@ sample_face.jpg (scripts/make_lighting_fixtures.py) for C2 quality-gate tests.
 
 face_pad_print.jpg / face_pad_replay.jpg are synthetic print / screen-replay
 proxies (scripts/make_pad_fixtures.py) for C3 PAD tests.
+
+face_occluded_mask.jpg is a synthetic surgical-mask occlusion proxy
+(scripts/make_occlusion_fixtures.py) for C5 PPE/occlusion tests.
 They are not biometric enrollment samples.

@@ -10,7 +10,7 @@ export type VisionMatchRequest = {
 };
 
 export type VisionMatchResponse = {
-  decision: 'matched' | 'no_match' | 'needs_review';
+  decision: 'matched' | 'no_match' | 'needs_review' | 'assisted_fallback';
   best_score: number;
   threshold: number;
   candidates: { worker_id: string; score: number }[];
@@ -54,7 +54,8 @@ export class VisionClientService {
     if (
       data.decision !== 'matched' &&
       data.decision !== 'no_match' &&
-      data.decision !== 'needs_review'
+      data.decision !== 'needs_review' &&
+      data.decision !== 'assisted_fallback'
     ) {
       throw new Error('vision match returned invalid decision');
     }

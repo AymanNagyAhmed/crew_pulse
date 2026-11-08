@@ -13,6 +13,7 @@ export type AttendanceCheckInResult = {
     | 'matched'
     | 'no_match'
     | 'needs_review'
+    | 'assisted_fallback'
     | 'duplicate'
     | 'cooldown'
     | 'vision_error';
@@ -20,6 +21,6 @@ export type AttendanceCheckInResult = {
   workerId?: string;
   attendanceId?: string;
   bestScore?: number;
-  decision?: 'matched' | 'no_match' | 'needs_review';
+  decision?: 'matched' | 'no_match' | 'needs_review' | 'assisted_fallback';
   message?: string;
 };
