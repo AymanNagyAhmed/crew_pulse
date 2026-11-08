@@ -5,6 +5,7 @@ export type AttendanceCheckInJob = {
   shiftId: string;
   direction: 'in' | 'out';
   candidateWorkerIds?: string[];
+  stationId?: string;
 };
 
 export type AttendanceCheckInResult = {

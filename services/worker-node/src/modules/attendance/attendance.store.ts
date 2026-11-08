@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { AttendanceLogJob } from '../../processors/attendance-log.job.js';
+import { buildAttendanceIdempotencyKey } from '../../processors/attendance-idempotency.js';
 import type { AttendanceRecord } from './attendance-record.js';
 
 export type PersistResult =
@@ -9,16 +10,19 @@ export type PersistResult =
   | { status: 'cooldown'; record: AttendanceRecord };
 
 /**
- * Verified attendance rows. In-memory for 4.2; swap for Postgres without changing the processor contract.
+ * Verified attendance rows. In-memory for now; swap for Postgres without changing the processor contract.
+ * C11: composite bucket key + cooldown suppress duplicate punches.
  */
 @Injectable()
 export class AttendanceStore {
   private readonly byIdempotency = new Map<string, AttendanceRecord>();
+  private readonly byComposite = new Map<string, AttendanceRecord>();
   private readonly chronology: AttendanceRecord[] = [];
 
   persist(
     job: AttendanceLogJob,
     cooldownSeconds: number,
+    bucketSeconds?: number,
   ): PersistResult {
     const existing = this.byIdempotency.get(job.idempotencyKey);
     if (existing) {
@@ -44,6 +48,19 @@ export class AttendanceStore {
       }
     }
 
+    const composite = buildAttendanceIdempotencyKey({
+      workerId: job.workerId,
+      venueId: job.venueId,
+      shiftId: job.shiftId,
+      direction: job.direction,
+      matchedAt: job.matchedAt,
+      bucketSeconds: bucketSeconds ?? Math.max(cooldownSeconds, 1),
+    });
+    const byBucket = this.byComposite.get(composite);
+    if (byBucket) {
+      return { status: 'duplicate', record: byBucket };
+    }
+
     const record: AttendanceRecord = {
       id: randomUUID(),
       workerId: job.workerId,
@@ -54,8 +71,10 @@ export class AttendanceStore {
       score: job.score,
       idempotencyKey: job.idempotencyKey,
       createdAt: new Date().toISOString(),
+      ...(job.stationId ? { stationId: job.stationId } : {}),
     };
     this.byIdempotency.set(job.idempotencyKey, record);
+    this.byComposite.set(composite, record);
     this.chronology.push(record);
     return { status: 'written', record };
   }

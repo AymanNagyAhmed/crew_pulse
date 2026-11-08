@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Job } from 'bullmq';
 import { AttendanceStore } from '../modules/attendance/attendance.store.js';
 import { CaptureHistoryStore } from '../modules/attendance/capture-history.store.js';
+import { resolveVenueCooldownSeconds } from '../modules/attendance/venue-cooldown.js';
 import { IdempotencyService } from '../modules/queues/idempotency.service.js';
 import { ATTENDANCE_CHECK_IN_QUEUE } from '../modules/queues/queue.constants.js';
 import {
@@ -34,8 +35,13 @@ export class AttendanceCheckInProcessor extends WorkerHost {
     job: Job<AttendanceCheckInJob>,
   ): Promise<AttendanceCheckInResult> {
     const payload = job.data;
-    const cooldown =
+    const globalCooldown =
       this.config.get<number>('ATTENDANCE_COOLDOWN_SECONDS') ?? 60;
+    const cooldown = resolveVenueCooldownSeconds(
+      payload.venueId,
+      globalCooldown,
+      this.config.get<string>('ATTENDANCE_COOLDOWN_BY_VENUE'),
+    );
 
     const claimed = await this.idempotency.tryClaim(
       ATTENDANCE_CHECK_IN_QUEUE,
@@ -111,6 +117,7 @@ export class AttendanceCheckInProcessor extends WorkerHost {
       direction: payload.direction,
       matchedAt: new Date().toISOString(),
       score: match.best_score,
+      ...(payload.stationId ? { stationId: payload.stationId } : {}),
     };
 
     const result = this.attendanceStore.persist(persistPayload, cooldown);
