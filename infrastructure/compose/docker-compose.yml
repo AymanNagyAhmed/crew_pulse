@@ -78,6 +78,9 @@ services:
       # Default stub so first boot does not require model weights; set VISION_STUB=false for real models
       VISION_STUB: ${VISION_STUB:-true}
       FACE_MIN_SIZE_PX: ${FACE_MIN_SIZE_PX:-80}
+      FACE_MAX_BLUR: ${FACE_MAX_BLUR:-0.65}
+      FACE_MIN_LUMINANCE: ${FACE_MIN_LUMINANCE:-0.15}
+      FACE_MAX_LUMINANCE: ${FACE_MAX_LUMINANCE:-0.92}
     ports:
       - "127.0.0.1:${VISION_ENGINE_PORT:-8000}:8000"
     volumes:

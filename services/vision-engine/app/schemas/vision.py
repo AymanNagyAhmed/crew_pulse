@@ -55,6 +55,14 @@ class DetectResponse(BaseModel):
     faces: list[DetectedFace]
     model_version: str = Field(examples=["stub-0.1.0"])
     stub: bool = Field(default=True, description="True until real models ship in 3.3")
+    reject_reasons: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Coachable quality-gate codes when faces were found but rejected "
+            "before embed (e.g. face_too_dark, face_too_bright). Empty when none."
+        ),
+        examples=[["face_too_dark"]],
+    )
 
 
 class MatchRequest(BaseModel):
@@ -85,3 +93,8 @@ class MatchResponse(BaseModel):
     )
     model_version: str = Field(examples=["stub-0.1.0"])
     stub: bool = True
+    reject_reasons: list[str] = Field(
+        default_factory=list,
+        description="Propagated from detect quality gates; coach capture, do not force match",
+        examples=[["face_too_dark"]],
+    )
