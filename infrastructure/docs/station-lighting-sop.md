@@ -29,3 +29,5 @@ Responses include `reject_reasons` (stable codes). Match stays `no_match` when e
 - [ ] Document local lux reading at face plane if available; keep notes with venue id.
 
 See also: `docs/challenges/2-low-light-and-harsh-illumination.md`, `services/vision-engine/docs/gateway-contract.md`.
+
+**Fairness (C8):** Underexposure disproportionately raises FNMR for darker skin. Treat lighting commissioning as a fairness control, and run group-wise FMR/FNMR (or luminance-bin proxies) before releasing threshold changes — `services/vision-engine/docs/fairness-eval.md`, `docs/release-checklist.md`.
