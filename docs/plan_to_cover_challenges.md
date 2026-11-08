@@ -23,7 +23,7 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 - [x] **C5** `5-ppe-masks-and-occlusion` — occlusion-aware match + assisted fallback
 - [x] **C6** `6-pose-angle-and-capture-quality` — capture QA + multi-template enrollment
 - [x] **C7** `7-biometric-privacy-and-compliance` — encrypted templates, retention, no vector logs
-- [ ] **C8** `8-demographic-bias-and-fairness` — group-wise metrics + release gates
+- [x] **C8** `8-demographic-bias-and-fairness` — group-wise metrics + release gates
 - [ ] **C9** `9-async-pipelines-and-end-to-end-latency` — SLOs, backpressure, idempotent jobs
 - [ ] **C10** `10-multi-venue-connectivity-and-edge` — offline / edge roster + sync
 - [ ] **C11** `11-attendance-integrity-and-duplicates` — cooldown, idempotency, audit overrides
@@ -114,6 +114,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 **Cover by:** Capture/threshold mitigations for FNMR; document group-wise FMR/FNMR eval harness (lawful metrics only); fairness checks as a release gate in this plan / CI notes.
 
 **Done when:** Eval harness or documented procedure exists; threshold/capture mitigations linked; release checklist mentions fairness gate.
+
+**Status (2026-11-08):** `app/eval/fairness_metrics.py` + `scripts/fairness_eval.py`; synthetic fixtures + `tests/test_fairness_metrics.py`; `docs/fairness-eval.md`; `docs/release-checklist.md` fairness gate; links from lighting SOP + edge-capture contract.
 
 ---
 

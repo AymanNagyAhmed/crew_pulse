@@ -74,3 +74,7 @@ List stored variants: `GET /v1/gallery/workers/{workerId}/templates`.
 ## Match path
 
 `POST /v1/match` propagates the same `reject_reasons`. Edge clients should treat framing codes as coachable and only escalate assisted fallback for occlusion codes.
+
+## Fairness (C8)
+
+Fixed camera height and pitch bias tall/short workers (FNMR). Keep framing gates and multi-template enroll; measure group-wise or pitch-bin FMR/FNMR before releasing threshold changes — `docs/fairness-eval.md`, root `docs/release-checklist.md`.
