@@ -12,6 +12,7 @@ import { ResponseMessage } from '../../common/decorators/response-message.decora
 import { AttendanceService } from './attendance.service.js';
 import { AssistedCheckInDto } from './dto/assisted-check-in.dto.js';
 import { CreateCheckInDto } from './dto/create-check-in.dto.js';
+import { CreateOverrideDto } from './dto/create-override.dto.js';
 
 @Controller('attendance')
 export class AttendanceController {
@@ -21,6 +22,23 @@ export class AttendanceController {
   @ResponseMessage('Attendance listed')
   list() {
     return this.attendanceService.list();
+  }
+
+  /** Immutable audit trail (overrides, low-confidence accepts, station rejects). */
+  @Get('audit')
+  @ResponseMessage('Attendance audit listed')
+  listAudit() {
+    return this.attendanceService.listAudit();
+  }
+
+  /**
+   * Supervisor override — audit only; never writes a verified payroll punch (C11).
+   */
+  @Post('overrides')
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Override audited')
+  override(@Body() body: CreateOverrideDto) {
+    return this.attendanceService.recordOverride(body);
   }
 
   /**

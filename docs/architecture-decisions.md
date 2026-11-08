@@ -13,7 +13,7 @@ Maps `docs/challenges/` to the component that owns the primary mitigation. Detai
 | 7 | Biometric privacy / compliance | `api-gateway` + infra | Encrypted templates; no vector logs; retention/erasure; non-biometric fallback |
 | 8 | Demographic bias / fairness | `vision-engine` + release gates | Group-wise FMR/FNMR; capture mitigations for FNMR |
 | 9 | Async pipelines / latency | `worker-node` + Redis/BullMQ | SLOs, backpressure, idempotent jobs, raw vs verified history |
-| 10 | Multi-venue connectivity / edge | Edge profile (deferred) | Local roster cache + sync; optional on-prem vision |
+| 10 | Multi-venue connectivity / edge | Edge compose + `api-gateway` edge sync | Local vision match; roster cache; server-authority punch sync |
 | 11 | Attendance integrity / duplicates | `worker-node` + attendance module | Cooldown, idempotency keys, station binding, audit overrides |
 | 12 | Digital injection / deepfakes | `api-gateway` capture risk + ops | Managed stations payroll-grade; BYOD/selfie step-up or review |
 

@@ -3,8 +3,11 @@ import {
   IsArray,
   IsBoolean,
   IsIn,
+  IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
   MinLength,
   ValidateNested,
 } from 'class-validator';
@@ -40,6 +43,24 @@ export class CreateCheckInDto {
   @ArrayMaxSize(500)
   @IsString({ each: true })
   candidateWorkerIds?: string[];
+
+  /** Capture station id — bound to venue when ATTENDANCE_STATION_VENUES is set (C11). */
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  stationId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  latitude?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  longitude?: number;
 
   /** Capture path — managed kiosk vs BYOD / remote selfie (C12). */
   @IsOptional()

@@ -6,6 +6,10 @@ import { randomUUID } from 'node:crypto';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
 import { ATTENDANCE_CHECK_IN_QUEUE } from '../queues/queue.constants.js';
 import {
+  type AttendanceAuditRecord,
+  AttendanceAuditStore,
+} from './attendance-audit.store.js';
+import {
   type AssistedAttendanceRecord,
   AssistedAttendanceStore,
 } from './assisted-attendance.store.js';
@@ -27,6 +31,11 @@ import {
 } from './capture-risk-policy.js';
 import type { AssistedCheckInDto } from './dto/assisted-check-in.dto.js';
 import type { CreateCheckInDto } from './dto/create-check-in.dto.js';
+import type { CreateOverrideDto } from './dto/create-override.dto.js';
+import {
+  assertStationBinding,
+  parseStationVenueMap,
+} from './station-binding.js';
 
 export type EnqueueCheckInResult = {
   jobId: string;
@@ -85,12 +94,67 @@ export class AttendanceService {
       AttendanceCheckInResult
     >,
     private readonly assistedStore: AssistedAttendanceStore,
+    private readonly auditStore: AttendanceAuditStore,
     private readonly config: ConfigService,
   ) {}
 
   list() {
     const assisted = this.assistedStore.list();
     return { items: assisted as unknown[], total: assisted.length };
+  }
+
+  listAudit() {
+    const items = this.auditStore.list();
+    return { items, total: items.length };
+  }
+
+  /**
+   * Supervisor override — immutable audit only; does not write payroll attendance (C11).
+   */
+  recordOverride(dto: CreateOverrideDto): {
+    auditId: string;
+    kind: 'override';
+    payrollWritten: false;
+    createdAt: string;
+  } {
+    const record = this.auditStore.append({
+      kind: 'override',
+      venueId: dto.venueId,
+      actorId: dto.actorId,
+      reason: dto.reason,
+      ...(dto.shiftId ? { shiftId: dto.shiftId } : {}),
+      ...(dto.workerId ? { workerId: dto.workerId } : {}),
+      ...(dto.direction ? { direction: dto.direction } : {}),
+      ...(dto.relatedId ? { relatedId: dto.relatedId } : {}),
+      ...(dto.confidence !== undefined ? { confidence: dto.confidence } : {}),
+    });
+    return {
+      auditId: record.id,
+      kind: 'override',
+      payrollWritten: false,
+      createdAt: record.createdAt,
+    };
+  }
+
+  recordLowConfidenceAccept(input: {
+    venueId: string;
+    shiftId: string;
+    workerId: string;
+    actorId: string;
+    reason: string;
+    confidence: number;
+    relatedId?: string;
+  }): AttendanceAuditRecord {
+    return this.auditStore.append({
+      kind: 'low_confidence_accept',
+      venueId: input.venueId,
+      shiftId: input.shiftId,
+      workerId: input.workerId,
+      actorId: input.actorId,
+      reason: input.reason,
+      confidence: input.confidence,
+      ...(input.relatedId ? { relatedId: input.relatedId } : {}),
+    });
   }
 
   async enqueueCheckIn(
@@ -110,6 +174,7 @@ export class AttendanceService {
       };
     }
 
+    this.assertStationOk(dto);
     const risk = this.resolveCaptureRisk(dto);
     await this.assertQueueAcceptsWork();
 
@@ -122,6 +187,7 @@ export class AttendanceService {
       ...(dto.candidateWorkerIds?.length
         ? { candidateWorkerIds: dto.candidateWorkerIds }
         : {}),
+      ...(dto.stationId ? { stationId: dto.stationId } : {}),
       captureSource: risk.captureSource,
       riskTier: risk.tier,
       ...(risk.forceReview ? { forceReview: true } : {}),
@@ -345,6 +411,54 @@ export class AttendanceService {
       403,
       decision.reasons.map((r) => ({ field: 'captureSource', issue: r })),
     );
+  }
+
+  private assertStationOk(dto: CreateCheckInDto): void {
+    const requireStation =
+      (this.config.get<string>('ATTENDANCE_REQUIRE_STATION') ?? 'false') ===
+      'true';
+    const stationVenues = parseStationVenueMap(
+      this.config.get<string>('ATTENDANCE_STATION_VENUES'),
+    );
+    const geofenceRaw = this.config.get<string>('ATTENDANCE_VENUE_GEOFENCE');
+    let geofence: { lat: number; lng: number; radiusMeters: number } | undefined;
+    if (geofenceRaw?.trim()) {
+      // venueId:lat:lng:radiusMeters — only apply when venue matches
+      for (const part of geofenceRaw.split(';')) {
+        const [vid, lat, lng, radius] = part.split(':').map((s) => s.trim());
+        if (vid === dto.venueId) {
+          geofence = {
+            lat: Number(lat),
+            lng: Number(lng),
+            radiusMeters: Number(radius),
+          };
+          break;
+        }
+      }
+    }
+
+    const bound = assertStationBinding({
+      stationId: dto.stationId,
+      venueId: dto.venueId,
+      requireStation,
+      stationVenues,
+      latitude: dto.latitude,
+      longitude: dto.longitude,
+      ...(geofence ? { geofence } : {}),
+    });
+    if (!bound.ok) {
+      this.auditStore.append({
+        kind: 'station_reject',
+        venueId: dto.venueId,
+        shiftId: dto.shiftId,
+        actorId: dto.stationId ?? 'unknown_station',
+        reason: bound.message,
+        metadata: { code: bound.code },
+      });
+      throw new DomainException(bound.code, bound.message, 403, [
+        { field: bound.field, issue: bound.message },
+      ]);
+    }
   }
 
   private async assertQueueAcceptsWork(): Promise<void> {

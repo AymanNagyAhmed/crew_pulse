@@ -7,4 +7,5 @@ export type AttendanceLogJob = {
   direction: 'in' | 'out';
   matchedAt: string;
   score?: number;
+  stationId?: string;
 };

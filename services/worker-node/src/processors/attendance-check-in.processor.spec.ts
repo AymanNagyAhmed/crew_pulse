@@ -23,7 +23,8 @@ describe('AttendanceCheckInProcessor', () => {
       release: vi.fn(),
     } as unknown as IdempotencyService;
     const config = {
-      get: () => 60,
+      get: (key: string) =>
+        key === 'ATTENDANCE_COOLDOWN_SECONDS' ? 60 : undefined,
     } as unknown as ConfigService;
     const vision = {
       match: vi.fn().mockResolvedValue({
@@ -112,7 +113,10 @@ describe('AttendanceCheckInProcessor', () => {
         tryClaim: vi.fn().mockResolvedValue(true),
         release: vi.fn(),
       } as unknown as IdempotencyService,
-      { get: () => 60 } as unknown as ConfigService,
+      {
+        get: (key: string) =>
+          key === 'ATTENDANCE_COOLDOWN_SECONDS' ? 60 : undefined,
+      } as unknown as ConfigService,
       {
         match: vi.fn().mockResolvedValue({
           decision: 'no_match',
@@ -157,7 +161,10 @@ describe('AttendanceCheckInProcessor', () => {
         tryClaim: vi.fn().mockResolvedValue(true),
         release: vi.fn(),
       } as unknown as IdempotencyService,
-      { get: () => 60 } as unknown as ConfigService,
+      {
+        get: (key: string) =>
+          key === 'ATTENDANCE_COOLDOWN_SECONDS' ? 60 : undefined,
+      } as unknown as ConfigService,
       vision,
       store,
       captures,
@@ -177,7 +184,10 @@ describe('AttendanceCheckInProcessor', () => {
         tryClaim: vi.fn().mockResolvedValue(false),
         release: vi.fn(),
       } as unknown as IdempotencyService,
-      { get: () => 60 } as unknown as ConfigService,
+      {
+        get: (key: string) =>
+          key === 'ATTENDANCE_COOLDOWN_SECONDS' ? 60 : undefined,
+      } as unknown as ConfigService,
       vision,
       store,
       captures,
@@ -207,7 +217,10 @@ describe('AttendanceCheckInProcessor', () => {
         tryClaim: vi.fn().mockResolvedValue(true),
         release,
       } as unknown as IdempotencyService,
-      { get: () => 60 } as unknown as ConfigService,
+      {
+        get: (key: string) =>
+          key === 'ATTENDANCE_COOLDOWN_SECONDS' ? 60 : undefined,
+      } as unknown as ConfigService,
       {
         match: vi.fn().mockRejectedValue(new Error('vision match failed with status 503')),
       } as unknown as VisionClientService,

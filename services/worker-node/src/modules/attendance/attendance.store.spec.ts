@@ -58,4 +58,20 @@ describe('AttendanceStore', () => {
     expect(later.status).toBe('written');
     expect(store.count()).toBe(2);
   });
+
+  it('dedupes on composite (worker,venue,shift,direction,timeBucket) key', () => {
+    const store = new AttendanceStore();
+    // cooldown=0 so only the composite bucket applies (60s buckets)
+    store.persist(job({ idempotencyKey: 'client-a' }), 0, 60);
+    const second = store.persist(
+      job({
+        idempotencyKey: 'client-b',
+        matchedAt: '2026-11-03T18:00:10.000Z',
+      }),
+      0,
+      60,
+    );
+    expect(second.status).toBe('duplicate');
+    expect(store.count()).toBe(1);
+  });
 });

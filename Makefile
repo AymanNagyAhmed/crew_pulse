@@ -5,14 +5,18 @@ COMPOSE_FILE := infrastructure/compose/docker-compose.yml
 ENV_FILE := infrastructure/env/.env
 ENV_EXAMPLE := infrastructure/env/.env.example
 
-.PHONY: help env up down logs ps build health smoke migrate dev frontend-dev
+COMPOSE_EDGE_FILE := infrastructure/compose/docker-compose.edge.yml
+
+.PHONY: help env up up-edge down down-edge logs ps build health smoke migrate dev frontend-dev
 
 help:
 	@echo "CrewPulse targets:"
 	@echo "  make env          - create infrastructure/env/.env from example if missing"
 	@echo "  make build        - build api-gateway, vision-engine, worker-node images"
 	@echo "  make up           - start infra + services (Compose)"
+	@echo "  make up-edge      - start on-prem edge stack (Redis + vision + nginx)"
 	@echo "  make down         - stop Compose stack"
+	@echo "  make down-edge    - stop edge Compose stack"
 	@echo "  make logs         - follow Compose logs"
 	@echo "  make ps           - Compose process status"
 	@echo "  make migrate      - apply infrastructure/migrations/*.sql to running Postgres"
@@ -35,12 +39,19 @@ up: env
 	fi
 	docker compose --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d --build
 
+# Local match path for flaky venues (C10). See infrastructure/docs/edge-sync.md
+up-edge: env
+	docker compose --env-file $(ENV_FILE) -f $(COMPOSE_EDGE_FILE) up -d --build
+
 down:
 	@if [ -f $(COMPOSE_FILE) ]; then \
 		docker compose --env-file $(ENV_FILE) -f $(COMPOSE_FILE) down; \
 	else \
 		echo "No compose file yet."; \
 	fi
+
+down-edge:
+	docker compose --env-file $(ENV_FILE) -f $(COMPOSE_EDGE_FILE) down
 
 # Idempotent SQL apply for existing volumes (initdb.d only runs on first boot).
 migrate: env

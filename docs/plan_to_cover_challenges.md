@@ -25,8 +25,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 - [x] **C7** `7-biometric-privacy-and-compliance` — encrypted templates, retention, no vector logs
 - [x] **C8** `8-demographic-bias-and-fairness` — group-wise metrics + release gates
 - [x] **C9** `9-async-pipelines-and-end-to-end-latency` — SLOs, backpressure, idempotent jobs
-- [ ] **C10** `10-multi-venue-connectivity-and-edge` — offline / edge roster + sync
-- [ ] **C11** `11-attendance-integrity-and-duplicates` — cooldown, idempotency, audit overrides
+- [x] **C10** `10-multi-venue-connectivity-and-edge` — offline / edge roster + sync
+- [x] **C11** `11-attendance-integrity-and-duplicates` — cooldown, idempotency, audit overrides
 - [x] **C12** `12-digital-injection-and-deepfakes` — managed stations + mobile attestation policy
 
 ---
@@ -137,6 +137,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 
 **Done when:** Compose `edge` (or similar) profile boots local match path; offline punch syncs without duplicate payroll rows; sync/conflict rules documented.
 
+**Status (2026-11-08):** `docker-compose.edge.yml` + `make up-edge`; `POST /v1/edge/sync/punches` idempotent on `deviceEventId`; roster snapshot API; `infrastructure/docs/edge-sync.md`.
+
 ---
 
 ## C11 — `11-attendance-integrity-and-duplicates`
@@ -145,6 +147,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 **Cover by:** Idempotency keys `(workerId, venueId, shiftId, direction, timeBucket)`; per-venue cooldown; station/geofence binding; immutable audit of overrides and low-confidence accepts.
 
 **Done when:** Duplicate punches suppressed; override API writes audit only; unit/e2e cover cooldown + idempotency.
+
+**Status (2026-11-08):** Composite bucket + per-venue cooldown; station/geofence binding; `POST /v1/attendance/overrides` audit-only; `infrastructure/docs/attendance-integrity.md`.
 
 ---
 
