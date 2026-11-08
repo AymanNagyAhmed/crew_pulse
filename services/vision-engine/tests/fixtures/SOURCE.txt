@@ -9,4 +9,7 @@ proxies (scripts/make_pad_fixtures.py) for C3 PAD tests.
 
 face_occluded_mask.jpg is a synthetic surgical-mask occlusion proxy
 (scripts/make_occlusion_fixtures.py) for C5 PPE/occlusion tests.
+
+face_too_blurry.jpg / face_yaw_extreme.jpg are synthetic motion-blur and
+extreme-yaw proxies (scripts/make_pose_blur_fixtures.py) for C6 pose/capture QA.
 They are not biometric enrollment samples.

@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     face_max_blur: float = 0.65
     face_min_luminance: float = 0.15
     face_max_luminance: float = 0.92
+    # Absolute yaw/pitch bounds (degrees) for usable 1:N crops.
+    face_max_yaw_deg: float = 25.0
+    face_max_pitch_deg: float = 20.0
 
     # Passive PAD (presentation attack detection) before embed.
     pad_enabled: bool = True

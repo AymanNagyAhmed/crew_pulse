@@ -21,7 +21,7 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 - [x] **C3** `3-presentation-attacks-and-liveness` — PAD / liveness before match
 - [x] **C4** `4-scaling-vector-search` — pgvector HNSW + venue/shift-scoped 1:N
 - [x] **C5** `5-ppe-masks-and-occlusion` — occlusion-aware match + assisted fallback
-- [ ] **C6** `6-pose-angle-and-capture-quality` — capture QA + multi-template enrollment
+- [x] **C6** `6-pose-angle-and-capture-quality` — capture QA + multi-template enrollment
 - [ ] **C7** `7-biometric-privacy-and-compliance` — encrypted templates, retention, no vector logs
 - [ ] **C8** `8-demographic-bias-and-fairness` — group-wise metrics + release gates
 - [ ] **C9** `9-async-pipelines-and-end-to-end-latency` — SLOs, backpressure, idempotent jobs
@@ -92,6 +92,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 **Cover by:** Enforce face size, blur, yaw/pitch bounds before match; multi-template enrollment QA; API errors that the client can show as framing feedback.
 
 **Done when:** Bad pose/blur fixtures rejected; enrollment accepts multiple templates per worker; contract documented for edge clients.
+
+**Status (2026-11-08):** Yaw/pitch gates + blur/yaw fixtures; `POST /v1/gallery/enroll` multi-template with capture QA; `docs/edge-capture-contract.md`.
 
 ---
 

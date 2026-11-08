@@ -21,10 +21,11 @@ make migrate
 
 Trusted service path (not for browsers; do not echo embeddings in responses or logs):
 
-1. Ensure worker/venue/shift rows exist (upsert helpers on the same API).
-2. `PUT /v1/gallery/templates` with `workerId`, `modelVersion`, `embedding` (length 512), optional `templateVersion`.
+1. Prefer **multi-template** enroll with capture QA: `POST /v1/gallery/enroll` (several frontal frames / PPE variants). See `services/vision-engine/docs/edge-capture-contract.md`.
+2. Or single upsert: `PUT /v1/gallery/templates` with `workerId`, `modelVersion`, `embedding` (length 512), optional `templateVersion`.
 3. Gateway L2-normalizes the vector, then `INSERT … ON CONFLICT DO UPDATE` on `(worker_id, model_version, template_version)`.
-4. Add the worker to the active roster: `PUT /v1/gallery/roster` with `venueId`, `shiftId`, `workerId`.
+4. List variants: `GET /v1/gallery/workers/{workerId}/templates`.
+5. Add the worker to the active roster: `PUT /v1/gallery/roster` with `venueId`, `shiftId`, `workerId`.
 
 Roster changes (agency float, last-minute replacement) only touch `shift_roster` — no gallery rebuild.
 

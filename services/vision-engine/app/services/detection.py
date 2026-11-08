@@ -72,7 +72,8 @@ class DetectionService:
             else:
                 face_bgr = face_rgb[:, :, ::-1]
 
-            quality = face_quality_from_bgr(face_bgr)
+            area = item.get("facial_area") or {}
+            quality = face_quality_from_bgr(face_bgr, facial_area=area)
             reject = quality_reject_reason(quality, settings)
             if reject is not None:
                 code = reject_code(reject)
@@ -108,7 +109,6 @@ class DetectionService:
             embedding_dim = len(embedding)
             del embedding, reps
 
-            area = item.get("facial_area") or {}
             bbox = BoundingBox(
                 x=int(area.get("x", 0)),
                 y=int(area.get("y", 0)),
