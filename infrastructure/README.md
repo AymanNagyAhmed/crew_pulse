@@ -20,11 +20,14 @@ Re-verify digests after `docker pull` before production compose. Trivy on the No
 
 ## Quick start
 
+End-to-end smoke (health + stub check-in curls) is documented in the [root README — Local smoke path](../README.md#local-smoke-path). Short form:
+
 ```zsh
 cd ~/ai_projects/crew_pulse
 cp infrastructure/env/.env.example infrastructure/env/.env   # or: make env
 make up          # builds + starts postgres, redis, api-gateway, vision-engine, worker-node
 make health      # infra + three service health endpoints
+make smoke       # health + vision /v1/match stub + gateway /v1/attendance
 docker compose --env-file infrastructure/env/.env -f infrastructure/compose/docker-compose.yml ps
 ```
 

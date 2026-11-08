@@ -11,7 +11,7 @@ After each numbered step’s **Done when** passes: branch → commit → push �
 - [x] **2** api-gateway skeleton (NestJS, `v1` prefix, health, response envelope)
 - [x] **3** vision-engine skeleton (FastAPI, health, detect/embed stub)
 - [x] **4** worker-node skeleton (NestJS/BullMQ consumer, health)
-- [ ] **5** Launch the app / local run (compose up + all health checks documented) — **required before any challenge**
+- [x] **5** Launch the app / local run (compose up + all health checks documented) — **required before any challenge**
 - [ ] **6** Cover challenges (`docs/plan_to_cover_challenges.md`; one branch/PR per challenge onto `dev`)
 
 Stop adding the “Next step” reply footer after phase **5** “Done when” passes. Do not start phase **6** until **5** is ticked.
