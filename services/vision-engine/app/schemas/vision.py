@@ -49,6 +49,13 @@ class DetectedFace(BaseModel):
         description="Embedding length only — raw vectors are never returned",
         examples=[512],
     )
+    pad_score: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Passive PAD live score 0 spoof → 1 live (accepted faces only)",
+        examples=[0.88],
+    )
 
 
 class DetectResponse(BaseModel):
@@ -58,10 +65,10 @@ class DetectResponse(BaseModel):
     reject_reasons: list[str] = Field(
         default_factory=list,
         description=(
-            "Coachable quality-gate codes when faces were found but rejected "
-            "before embed (e.g. face_too_dark, face_too_bright). Empty when none."
+            "Coachable codes when faces were rejected before embed "
+            "(e.g. face_too_dark, pad_print, pad_replay). Empty when none."
         ),
-        examples=[["face_too_dark"]],
+        examples=[["face_too_dark"], ["pad_print"]],
     )
 
 
@@ -95,6 +102,8 @@ class MatchResponse(BaseModel):
     stub: bool = True
     reject_reasons: list[str] = Field(
         default_factory=list,
-        description="Propagated from detect quality gates; coach capture, do not force match",
-        examples=[["face_too_dark"]],
+        description=(
+            "Propagated from detect quality/PAD gates; coach capture, do not force match"
+        ),
+        examples=[["face_too_dark"], ["pad_replay"]],
     )

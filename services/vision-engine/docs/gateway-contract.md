@@ -18,5 +18,6 @@ Peak-load check-ins: **api-gateway** accepts `POST /v1/attendance/check-ins` (20
 - **Never** expect or log raw embedding vectors from these responses (`embedding_dim` / scores only).
 - `stub: false` when RetinaFace/Facenet512 is live; `VISION_STUB=true` forces stubs. Do not special-case beyond metrics.
 - Quality gates (`face_too_dark`, `face_too_bright`, `face_too_blurry`, `face_too_small`) reject **before embed**. Coach from `reject_reasons`; do not force match. Station lighting: `infrastructure/docs/station-lighting-sop.md`.
+- PAD (passive) runs after quality and **before embed**. Codes: `pad_print`, `pad_replay`, `pad_fail`. Match stays `no_match` when PAD rejects (payroll fail-closed). Accepted faces may include `pad_score` (0 spoof → 1 live); gateways should not treat the raw score as a client-facing liveness verdict beyond the reject codes.
 
 OpenAPI: `{VISION_ENGINE_URL}/docs` or `/openapi.json` (`operationId`s `vision.detect`, `vision.match`).

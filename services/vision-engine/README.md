@@ -21,9 +21,9 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 Set `VISION_STUB=true` to skip model load (deterministic stubs for offline CI).
 
-## Quality gates
+## Quality gates + PAD
 
-Before embedding: minimum face size (`FACE_MIN_SIZE_PX`), max blur, luminance band. Rejected faces are omitted from `faces[]` (not embedded).
+Before embedding: minimum face size (`FACE_MIN_SIZE_PX`), max blur, luminance band, then passive PAD (`PAD_ENABLED`, `PAD_MIN_SCORE`). Rejected faces are omitted from `faces[]` (not embedded); coach via `reject_reasons` (`face_too_dark`, `pad_print`, `pad_replay`, …). Accepted faces may include `pad_score` (0 spoof → 1 live).
 
 ## Privacy
 

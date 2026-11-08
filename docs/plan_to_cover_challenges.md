@@ -18,7 +18,7 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 
 - [x] **C1** `1-high-throughput-shift-spikes` — queue & decouple under shift spikes
 - [x] **C2** `2-low-light-and-harsh-illumination` — luminance / quality gates + deploy lighting SOP
-- [ ] **C3** `3-presentation-attacks-and-liveness` — PAD / liveness before match
+- [x] **C3** `3-presentation-attacks-and-liveness` — PAD / liveness before match
 - [ ] **C4** `4-scaling-vector-search` — pgvector HNSW + venue/shift-scoped 1:N
 - [ ] **C5** `5-ppe-masks-and-occlusion` — occlusion-aware match + assisted fallback
 - [ ] **C6** `6-pose-angle-and-capture-quality` — capture QA + multi-template enrollment
@@ -59,6 +59,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 **Cover by:** Add a PAD stage before match (passive multi-frame first; active only for high-risk / mobile); fail closed on PAD fail for payroll-grade punches.
 
 **Done when:** Stub or real PAD score appears in the vision pipeline; print/replay fixtures fail PAD; match is skipped when PAD rejects.
+
+**Status (2026-11-08):** Passive PAD after quality / before embed; `pad_score` on accepted faces; `pad_print` / `pad_replay` fixtures + `tests/test_pad.py`; match fail-closed via `reject_reasons`.
 
 ---
 
