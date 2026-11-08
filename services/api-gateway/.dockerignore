@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+.git
+*.md
+AGENTS.md
+test
+vitest.config.ts
+vitest.config.e2e.ts
+tsconfig.build.tsbuildinfo
+.env
+.env.*
+**/*.spec.ts
+**/__mocks__

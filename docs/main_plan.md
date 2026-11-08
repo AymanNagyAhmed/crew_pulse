@@ -9,8 +9,8 @@ After each numbered step’s **Done when** passes: branch → commit → push �
 - [x] **0** Foundations (layout, gitignore, env, Makefile)
 - [x] **1** Infrastructure (Compose: Postgres+pgvector, Redis; Nginx stub; migrations home)
 - [x] **2** api-gateway skeleton (NestJS, `v1` prefix, health, response envelope)
-- [ ] **3** vision-engine skeleton (FastAPI, health, detect/embed stub)
-- [ ] **4** worker-node skeleton (NestJS/BullMQ consumer, health)
+- [x] **3** vision-engine skeleton (FastAPI, health, detect/embed stub)
+- [x] **4** worker-node skeleton (NestJS/BullMQ consumer, health)
 - [ ] **5** Launch the app / local run (compose up + all health checks documented) — **required before any challenge**
 - [ ] **6** Cover challenges (`docs/plan_to_cover_challenges.md`; one branch/PR per challenge onto `dev`)
 
