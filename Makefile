@@ -5,7 +5,7 @@ COMPOSE_FILE := infrastructure/compose/docker-compose.yml
 ENV_FILE := infrastructure/env/.env
 ENV_EXAMPLE := infrastructure/env/.env.example
 
-.PHONY: help env up down logs ps build health smoke dev frontend-dev
+.PHONY: help env up down logs ps build health smoke migrate dev frontend-dev
 
 help:
 	@echo "CrewPulse targets:"
@@ -15,6 +15,7 @@ help:
 	@echo "  make down         - stop Compose stack"
 	@echo "  make logs         - follow Compose logs"
 	@echo "  make ps           - Compose process status"
+	@echo "  make migrate      - apply infrastructure/migrations/*.sql to running Postgres"
 	@echo "  make health       - check postgres, redis, api-gateway, vision-engine, worker-node"
 	@echo "  make smoke        - health + stub vision match + attendance list"
 	@echo "  make frontend-dev - run Vite SPA (expects make up + healthy api-gateway)"
@@ -40,6 +41,17 @@ down:
 	else \
 		echo "No compose file yet."; \
 	fi
+
+# Idempotent SQL apply for existing volumes (initdb.d only runs on first boot).
+migrate: env
+	@set -e; \
+	. $(ENV_FILE); \
+	for f in infrastructure/migrations/*.sql; do \
+	  echo "apply $$f"; \
+	  docker exec -i crewpulse-postgres \
+	    psql -v ON_ERROR_STOP=1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" < "$$f"; \
+	done; \
+	echo "migrations applied"
 
 logs:
 	docker compose --env-file $(ENV_FILE) -f $(COMPOSE_FILE) logs -f

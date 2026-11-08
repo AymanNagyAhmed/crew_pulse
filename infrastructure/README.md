@@ -31,7 +31,7 @@ make smoke       # health + vision /v1/match stub + gateway /v1/attendance
 docker compose --env-file infrastructure/env/.env -f infrastructure/compose/docker-compose.yml ps
 ```
 
-Fresh Postgres runs `migrations/001_init.sql` (enables `vector`, creates `crewpulse` schema).
+Fresh Postgres runs `migrations/001_init.sql` then `002_vector_gallery.sql` (vector extension, `crewpulse` schema, face templates + HNSW, shift roster). Existing volumes: `make migrate`. Gallery upsert/search: `infrastructure/docs/vector-gallery.md`.
 
 Compose injects service DNS (`postgres`, `redis`, `vision-engine`) into container env. The localhost URLs in `.env` remain for host-side `npm` / `uvicorn` runs.
 
