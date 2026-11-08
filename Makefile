@@ -5,7 +5,7 @@ COMPOSE_FILE := infrastructure/compose/docker-compose.yml
 ENV_FILE := infrastructure/env/.env
 ENV_EXAMPLE := infrastructure/env/.env.example
 
-.PHONY: help env up down logs ps build health dev
+.PHONY: help env up down logs ps build health smoke dev
 
 help:
 	@echo "CrewPulse targets:"
@@ -16,6 +16,7 @@ help:
 	@echo "  make logs    - follow Compose logs"
 	@echo "  make ps      - Compose process status"
 	@echo "  make health  - check postgres, redis, api-gateway, vision-engine, worker-node"
+	@echo "  make smoke   - health + stub vision match + attendance list"
 	@echo "  make dev     - hint for host-side service dev"
 
 env:
@@ -65,6 +66,22 @@ health: env
 	curl -sf "http://127.0.0.1:$${WORKER_NODE_PORT:-3001}/v1/health" | grep -q '"success":true'; \
 	echo "  ok (/v1/health)"; \
 	echo "stack healthy"
+
+smoke: health
+	@set -e; \
+	. $(ENV_FILE); \
+	IMG='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='; \
+	echo "vision stub match..."; \
+	curl -sf -X POST "http://127.0.0.1:$${VISION_ENGINE_PORT:-8000}/v1/match" \
+	  -H 'Content-Type: application/json' \
+	  -d "{\"image_base64\":\"$${IMG}\",\"venue_id\":\"ven_smoke\",\"shift_id\":\"shf_smoke\",\"candidate_worker_ids\":[\"wrk_smoke_001\"]}" \
+	  | grep -q '"stub":true'; \
+	echo "  ok (/v1/match stub)"; \
+	echo "attendance list stub..."; \
+	curl -sf "http://127.0.0.1:$${API_GATEWAY_PORT:-3000}/v1/attendance" \
+	  | grep -q '"success":true'; \
+	echo "  ok (/v1/attendance)"; \
+	echo "smoke path ok"
 
 dev:
 	@echo "Host-side services (Compose infra only: postgres + redis):"
