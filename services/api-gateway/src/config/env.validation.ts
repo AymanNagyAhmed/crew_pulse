@@ -11,6 +11,8 @@ export type AppEnv = {
   DATABASE_URL: string;
   REDIS_URL: string;
   VISION_ENGINE_URL: string;
+  /** Comma-separated browser origins; optional */
+  CORS_ORIGINS?: string;
 };
 
 export function validateEnv(config: Record<string, unknown>): AppEnv {
@@ -23,6 +25,12 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
     throw new Error(`Invalid API_GATEWAY_PORT: ${portRaw}`);
   }
 
+  const corsRaw = config.CORS_ORIGINS;
+  const corsOrigins =
+    typeof corsRaw === 'string' && corsRaw.trim() !== ''
+      ? corsRaw.trim()
+      : undefined;
+
   if (isTest) {
     return {
       NODE_ENV: nodeEnv,
@@ -32,6 +40,7 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
       VISION_ENGINE_URL: String(
         config.VISION_ENGINE_URL ?? 'http://localhost:8000',
       ),
+      ...(corsOrigins !== undefined ? { CORS_ORIGINS: corsOrigins } : {}),
     };
   }
 
@@ -44,5 +53,6 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
       'VISION_ENGINE_URL',
       config.VISION_ENGINE_URL as string | undefined,
     ),
+    ...(corsOrigins !== undefined ? { CORS_ORIGINS: corsOrigins } : {}),
   };
 }

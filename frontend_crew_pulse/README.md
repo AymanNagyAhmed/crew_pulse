@@ -1,29 +1,35 @@
 # frontend_crew_pulse
 
-CrewPulse React + TypeScript SPA (Vite). Talks to **api-gateway** only via `VITE_API_BASE_URL`.
+React + TypeScript SPA (Vite) for CrewPulse. Talks to **api-gateway** only via `VITE_API_BASE_URL`.
 
-## Prerequisites
-
-- Node **24.22.2** (`source ~/.nvm/nvm.sh && nvm use 24.22.2`)
-- Local stack up: `make up` from the repo root (api-gateway on `:3000`)
-
-## Setup
+## Local smoke (against Compose stack)
 
 ```zsh
-cp .env.example .env
+# from repo root — start postgres, redis, api-gateway, vision-engine, worker-node
+make up && make health
+
+# Node 24.22.2, then SPA
+source ~/.nvm/nvm.sh && nvm use 24.22.2
+cd frontend_crew_pulse
+cp -n .env.example .env
 npm install
 npm run dev
 ```
 
-Open the URL Vite prints (usually `http://127.0.0.1:5173`).
+Or from the repo root: `make frontend-dev` (expects `make up` already healthy).
 
-## Scripts
+Open the printed Vite URL (usually `http://127.0.0.1:5173`). The home screen probes `GET {VITE_API_BASE_URL}/v1/health` and should show **api-gateway reachable**.
 
-| Script | Purpose |
-|--------|---------|
-| `npm run dev` | Vite dev server |
-| `npm run build` | Typecheck + production build |
-| `npm run preview` | Preview production build |
-| `npm run lint` | oxlint |
+### Env
 
-UI guidance: `.cursor/skills/frontend-ui-design/` and `.cursor/rules/frontend-react.mdc`.
+| Variable | Example | Notes |
+|----------|---------|--------|
+| `VITE_API_BASE_URL` | `http://127.0.0.1:3000` | api-gateway published by Compose |
+
+Gateway CORS must allow the Vite origin (Compose defaults include `5173` / `4173`). See `CORS_ORIGINS` in `infrastructure/env/.env.example`.
+
+### Curl fallback
+
+```zsh
+curl -s http://127.0.0.1:3000/v1/health
+```

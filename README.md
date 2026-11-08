@@ -26,6 +26,7 @@
 
 ```text
 crewpulse/
+├── frontend_crew_pulse/   # React + TypeScript SPA (Vite)
 ├── services/
 │   ├── api-gateway/       # NestJS core API & business logic
 │   ├── vision-engine/     # FastAPI Python service for face detection & embeddings
@@ -82,3 +83,19 @@ curl -s http://127.0.0.1:3000/v1/attendance
 ```
 
 More infra detail (image digests, `VISION_STUB`, nginx `edge` profile): [`infrastructure/README.md`](infrastructure/README.md). Build plan: [`docs/main_plan.md`](docs/main_plan.md).
+
+---
+
+## Frontend SPA
+
+With the Compose stack healthy (`make up && make health`), run the Vite app on the host:
+
+```zsh
+source ~/.nvm/nvm.sh && nvm use 24.22.2
+make frontend-dev
+# equivalent: cd frontend_crew_pulse && cp -n .env.example .env && npm install && npm run dev
+```
+
+Open `http://127.0.0.1:5173` (or the URL Vite prints). The home screen calls `GET /v1/health` on api-gateway (`VITE_API_BASE_URL`, default `http://127.0.0.1:3000`) and should show **api-gateway reachable**. Gateway CORS for Vite is set via `CORS_ORIGINS` (see `infrastructure/env/.env.example`).
+
+Details: [`frontend_crew_pulse/README.md`](frontend_crew_pulse/README.md).
