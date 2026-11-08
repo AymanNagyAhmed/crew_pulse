@@ -38,6 +38,75 @@ services:
       retries: 10
       start_period: 5s
 
+  api-gateway:
+    build:
+      context: ../../services/api-gateway
+      dockerfile: Dockerfile
+    image: crewpulse/api-gateway:local
+    container_name: crewpulse-api-gateway
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_GATEWAY_PORT: ${API_GATEWAY_PORT:-3000}
+      # Compose network hostnames (host .env keeps localhost for non-Docker runs)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-crewpulse}:${POSTGRES_PASSWORD:-crewpulse_dev_change_me}@postgres:5432/${POSTGRES_DB:-crewpulse}
+      REDIS_URL: redis://redis:6379
+      VISION_ENGINE_URL: http://vision-engine:8000
+    ports:
+      - "127.0.0.1:${API_GATEWAY_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vision-engine:
+        condition: service_healthy
+
+  vision-engine:
+    build:
+      context: ../../services/vision-engine
+      dockerfile: Dockerfile
+    image: crewpulse/vision-engine:local
+    container_name: crewpulse-vision-engine
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: ${VISION_ENGINE_PORT:-8000}
+      DEEPFACE_HOME: /data
+      # Default stub so first boot does not require model weights; set VISION_STUB=false for real models
+      VISION_STUB: ${VISION_STUB:-true}
+      FACE_MIN_SIZE_PX: ${FACE_MIN_SIZE_PX:-80}
+    ports:
+      - "127.0.0.1:${VISION_ENGINE_PORT:-8000}:8000"
+    volumes:
+      - crewpulse_deepface_data:/data
+      # Optional host weights: set DEEPFACE_HOST_DIR=~/.deepface (bind replaces named volume mount path)
+      # - ${DEEPFACE_HOST_DIR:-}/.deepface:/data/.deepface:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  worker-node:
+    build:
+      context: ../../services/worker-node
+      dockerfile: Dockerfile
+    image: crewpulse/worker-node:local
+    container_name: crewpulse-worker-node
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      WORKER_NODE_PORT: ${WORKER_NODE_PORT:-3001}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-crewpulse}:${POSTGRES_PASSWORD:-crewpulse_dev_change_me}@postgres:5432/${POSTGRES_DB:-crewpulse}
+      REDIS_URL: redis://redis:6379
+      ATTENDANCE_COOLDOWN_SECONDS: ${ATTENDANCE_COOLDOWN_SECONDS:-60}
+    ports:
+      - "127.0.0.1:${WORKER_NODE_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   nginx:
     image: nginx:1.28.0-alpine
     container_name: crewpulse-nginx
@@ -47,9 +116,9 @@ services:
     volumes:
       - ../nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      postgres:
+      api-gateway:
         condition: service_healthy
-      redis:
+      vision-engine:
         condition: service_healthy
     profiles:
       - edge
@@ -57,3 +126,4 @@ services:
 volumes:
   crewpulse_pg_data:
   crewpulse_redis_data:
+  crewpulse_deepface_data:
