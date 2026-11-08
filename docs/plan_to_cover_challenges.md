@@ -19,7 +19,7 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 - [x] **C1** `1-high-throughput-shift-spikes` — queue & decouple under shift spikes
 - [x] **C2** `2-low-light-and-harsh-illumination` — luminance / quality gates + deploy lighting SOP
 - [x] **C3** `3-presentation-attacks-and-liveness` — PAD / liveness before match
-- [ ] **C4** `4-scaling-vector-search` — pgvector HNSW + venue/shift-scoped 1:N
+- [x] **C4** `4-scaling-vector-search` — pgvector HNSW + venue/shift-scoped 1:N
 - [ ] **C5** `5-ppe-masks-and-occlusion` — occlusion-aware match + assisted fallback
 - [ ] **C6** `6-pose-angle-and-capture-quality` — capture QA + multi-template enrollment
 - [ ] **C7** `7-biometric-privacy-and-compliance` — encrypted templates, retention, no vector logs
@@ -70,6 +70,8 @@ Git workflow for every challenge: `.cursor/rules/challenge-pr-workflow.mdc` (bra
 **Cover by:** HNSW (or equivalent) indexes; scope 1:N search to venue/shift roster; online embedding upserts for enroll/roster changes.
 
 **Done when:** Migration + query path uses vector index; search is roster-scoped; upsert path documented and tested for a small gallery.
+
+**Status (2026-11-08):** `002_vector_gallery.sql` + HNSW; `PUT /v1/gallery/templates`, `PUT /v1/gallery/roster`, `POST /v1/gallery/search`; `infrastructure/docs/vector-gallery.md`; gallery unit + e2e on small roster.
 
 ---
 

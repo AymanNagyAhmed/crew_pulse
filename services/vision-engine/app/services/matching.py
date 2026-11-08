@@ -1,4 +1,4 @@
-"""1:N match — real detect + stub gallery scores until vector search (C4)."""
+"""1:N match — real detect + stub scores; production gallery ANN is api-gateway/pgvector (C4)."""
 
 from __future__ import annotations
 
