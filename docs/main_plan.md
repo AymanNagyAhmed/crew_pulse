@@ -12,9 +12,10 @@ After each numbered step’s **Done when** passes: branch → commit → push �
 - [x] **3** vision-engine skeleton (FastAPI, health, detect/embed stub)
 - [x] **4** worker-node skeleton (NestJS/BullMQ consumer, health)
 - [x] **5** Launch the app / local run (compose up + all health checks documented) — **required before any challenge**
-- [ ] **6** Cover challenges (`docs/plan_to_cover_challenges.md`; one branch/PR per challenge onto `dev`)
+- [ ] **6** Frontend app (`frontend_crew_pulse/`: React + TypeScript, UI skills)
+- [ ] **7** Cover challenges (`docs/plan_to_cover_challenges.md`; one branch/PR per challenge onto `dev`)
 
-Stop adding the “Next step” reply footer after phase **5** “Done when” passes. Do not start phase **6** until **5** is ticked.
+Stop adding the “Next step” reply footer after phase **5** “Done when” passes. Do not start phase **7** (challenges) until **5** is ticked; prefer finishing phase **6** frontend skeleton before challenge UI work.
 
 ---
 
@@ -28,6 +29,7 @@ export API=$ROOT/services/api-gateway
 export VISION=$ROOT/services/vision-engine
 export WORKER=$ROOT/services/worker-node
 export INFRA=$ROOT/infrastructure
+export FRONTEND=$ROOT/frontend_crew_pulse
 ```
 
 ---
@@ -169,7 +171,48 @@ README section: `make up`, health curls for gateway + vision, one stub check-in 
 
 ---
 
-## Phase 6 — Cover challenges
+## Phase 6 — Frontend (`frontend_crew_pulse/`)
+
+React + TypeScript SPA at repo-root `frontend_crew_pulse/` (not under `services/`). Talks to api-gateway only; never imports vision/OpenCV or Nest server code.
+
+UI guidance: project skill `.cursor/skills/frontend-ui-design/`, rule `.cursor/rules/frontend-react.mdc`, and (optional) Cursor Marketplace plugins listed in 6.1.
+
+### 6.1 Cursor UI skills, rules, and editor plugins
+
+Ensure agents and the IDE are set up for intentional frontend design before scaffolding UI screens:
+
+1. Project skill `frontend-ui-design` and rule `frontend-react` are present under `.cursor/` (commit with this phase).
+2. Local Cursor plugin `crewpulse-frontend-ui` under `~/.cursor/plugins/local/` (reload window if needed).
+3. Editor extensions (WSL): ESLint, Prettier, Tailwind CSS IntelliSense, Auto Rename Tag, Path Intellisense, Error Lens.
+4. **Manual (Marketplace):** open Cursor **Customize → Plugins** and install useful UI plugins such as [shadcn/ui](https://cursor.com/marketplace/shadcn) if you plan to use that component system; optional community UI skills from [cursor.directory](https://cursor.directory/).
+
+**Done when:** skill + rule exist in the repo; listed editor extensions are installed (`cursor --list-extensions`); Marketplace plugin installs noted for the developer (shadcn optional).
+
+### 6.2 Scaffold React + TypeScript app
+
+Scaffold with Vite (React + TypeScript template) into `frontend_crew_pulse/` using **latest stable** packages only (`npm view react version` → currently track `dist-tags.latest`, e.g. React 19.x). Node 24.22.2. Follow `dependency-check.mdc`.
+
+```zsh
+source ~/.nvm/nvm.sh && nvm use 24.22.2
+cd ~/ai_projects/crew_pulse
+# verify: npm view react version   # must be dist-tags.latest, not canary
+npm create vite@latest frontend_crew_pulse -- --template react-ts
+cd frontend_crew_pulse && npm install
+```
+
+Add `.env.example` with `VITE_API_BASE_URL=http://127.0.0.1:3000`, strict TS, and a minimal home route that names **CrewPulse** (brand-first; apply `frontend-ui-design`).
+
+**Done when:** `npm run build` succeeds; `npm run dev` serves the app; folder is `frontend_crew_pulse/` at repo root.
+
+### 6.3 Wire smoke + README
+
+Document in root README (or `frontend_crew_pulse/README.md`): `make up` for API, then `cd frontend_crew_pulse && npm run dev`. Optional: Makefile `frontend-dev` target. One stub call to gateway health from the UI or a documented `curl` remains acceptable until real screens land.
+
+**Done when:** another engineer can open the SPA against a running stack; phase **6** checklist ticked.
+
+---
+
+## Phase 7 — Cover challenges
 
 Implement mitigations one challenge at a time per `docs/plan_to_cover_challenges.md`. After each challenge: branch named after the challenge file stem, commit, push, PR into `dev` (see `.cursor/rules/challenge-pr-workflow.mdc`).
 
@@ -183,6 +226,7 @@ Implement mitigations one challenge at a time per `docs/plan_to_cover_challenges
 - Challenge mitigations C1–C12: `docs/plan_to_cover_challenges.md` (PR workflow: `.cursor/rules/challenge-pr-workflow.mdc`)
 - Postman collection sync (`postman-sync.mdc`) once real attendance routes ship
 - Nginx TLS and production digests
+- Frontend Compose image / Nginx static serving (after 6.x)
 
 ## Challenge ownership (summary)
 

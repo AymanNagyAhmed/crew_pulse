@@ -45,7 +45,8 @@ docker-compose.override.yml
 
 # IDE / OS
 .idea/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
 *.swp
 .DS_Store
 Thumbs.db

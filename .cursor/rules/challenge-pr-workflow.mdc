@@ -4,7 +4,7 @@ Applies when implementing a step from `docs/plan_to_cover_challenges.md` (one ch
 
 ## Gate
 
-Do not start challenge work until `docs/main_plan.md` phase **5** (launch the app / local run) is complete and ticked.
+Do not start challenge work until `docs/main_plan.md` phase **5** (launch the app / local run) is complete and ticked. Challenge PRs are phase **7** in the main plan; prefer completing phase **6** (`frontend_crew_pulse/`) before challenge work that needs UI.
 
 ## After covering a challenge
 

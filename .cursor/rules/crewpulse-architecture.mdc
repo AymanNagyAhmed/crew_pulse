@@ -11,6 +11,7 @@ alwaysApply: true
 
 ```text
 crewpulse/
+├── frontend_crew_pulse/   # React + TypeScript SPA (Vite)
 ├── services/
 │   ├── api-gateway/       # NestJS core API & business logic
 │   ├── vision-engine/     # FastAPI Python: face detection & embeddings
@@ -19,10 +20,11 @@ crewpulse/
 └── docs/                  # Architecture, API specs, build plan (docs/main_plan.md)
 ```
 
-Shell shortcuts used in rules: `$API` = `services/api-gateway`, `$VISION` = `services/vision-engine`, `$WORKER` = `services/worker-node`, `$INFRA` = `infrastructure`.
+Shell shortcuts used in rules: `$API` = `services/api-gateway`, `$VISION` = `services/vision-engine`, `$WORKER` = `services/worker-node`, `$INFRA` = `infrastructure`, `$FRONTEND` = `frontend_crew_pulse`.
 
 ## Stack
 
+- **Frontend:** React (latest stable) + TypeScript in `frontend_crew_pulse/`; UI skill `frontend-ui-design`
 - **Vision:** Python, OpenCV, DeepFace / RetinaFace, NumPy
 - **API:** Node.js / NestJS, TypeScript; vision via FastAPI microservice
 - **Data / broker:** PostgreSQL (vector indexing), Redis, BullMQ / Kafka KRaft
@@ -33,4 +35,5 @@ Shell shortcuts used in rules: `$API` = `services/api-gateway`, `$VISION` = `ser
 - Face detection and embedding live only in `vision-engine`; NestJS calls it over HTTP/gRPC — never import OpenCV/DeepFace into Node.
 - Domain APIs, auth, venues, shifts, and attendance orchestration live in `api-gateway`.
 - Long-running or peak-queue work (log writes, webhooks, embedding batch) goes to `worker-node` via Redis/BullMQ or Kafka — not inline in request handlers.
+- The SPA in `frontend_crew_pulse/` calls `api-gateway` only; it must not embed vision models or connect to Postgres/Redis directly.
 - Biometric embeddings and PII: treat as sensitive; no embeddings in logs or client responses unless the API contract explicitly requires a non-reversible identifier.

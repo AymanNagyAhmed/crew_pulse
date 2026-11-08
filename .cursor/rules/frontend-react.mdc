@@ -1,0 +1,16 @@
+---
+description: React + TypeScript conventions for frontend_crew_pulse
+globs: frontend_crew_pulse/**/*.{ts,tsx,css}
+alwaysApply: false
+---
+
+# frontend_crew_pulse (React + TypeScript)
+
+- App lives at repo-root `frontend_crew_pulse/` (Vite + React + TypeScript). Not under `services/`.
+- Use **latest stable** `react` / `react-dom` / `typescript` / `vite` (`dist-tags.latest` only; no canary/rc).
+- Node **24.22.2** via nvm before any `npm` / `npx` (see `node-version.mdc`).
+- Call **api-gateway** over HTTP (`VITE_API_BASE_URL`); never import Nest, Prisma, or vision Python into the frontend.
+- Biometrics: show match status / worker display names only — never raw embeddings.
+- UI/UX: follow skill `frontend-ui-design` (`.cursor/skills/frontend-ui-design/SKILL.md`).
+- Strict TypeScript; prefer function components; colocate feature folders under `src/`.
+- Dependency installs: follow `dependency-check.mdc` before `npm add`.

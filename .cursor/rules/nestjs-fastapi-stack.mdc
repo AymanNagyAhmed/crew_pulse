@@ -9,7 +9,7 @@ Use the **latest stable** releases and official docs:
 
 - NestJS: [docs.nestjs.com](https://docs.nestjs.com/)
 - FastAPI: [fastapi.tiangolo.com](https://fastapi.tiangolo.com/)
-- React only if a frontend app is added later: [react.dev](https://react.dev/reference/react)
+- React SPA (`frontend_crew_pulse/`): [react.dev](https://react.dev/reference/react) — latest stable only
 
 ## Versions
 
