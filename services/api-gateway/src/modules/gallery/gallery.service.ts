@@ -5,10 +5,12 @@ import {
   FACE_EMBEDDING_DIM,
   PG_POOL,
 } from '../database/database.constants.js';
+import type { EnrollTemplatesDto } from './dto/enroll-templates.dto.js';
 import type { SearchGalleryDto } from './dto/search-gallery.dto.js';
 import type { UpsertRosterDto } from './dto/upsert-roster.dto.js';
 import type { UpsertTemplateDto } from './dto/upsert-template.dto.js';
 import { l2Normalize, toPgVectorLiteral } from './embedding.util.js';
+import { assertEnrollmentQa } from './enrollment-qa.js';
 
 export type UpsertTemplateResult = {
   workerId: string;
@@ -16,6 +18,20 @@ export type UpsertTemplateResult = {
   templateVersion: number;
   embeddingDim: number;
   created: boolean;
+};
+
+export type EnrollTemplatesResult = {
+  workerId: string;
+  modelVersion: string;
+  embeddingDim: number;
+  templates: { templateVersion: number; created: boolean }[];
+};
+
+export type ListedTemplate = {
+  workerId: string;
+  modelVersion: string;
+  templateVersion: number;
+  updatedAt: string;
 };
 
 export type UpsertRosterResult = {
@@ -91,6 +107,72 @@ export class GalleryService {
     } finally {
       client.release();
     }
+  }
+
+  /**
+   * Multi-template enrollment with capture QA. Rejects blurry / extreme-pose
+   * frames so one bad hire photo cannot poison 1:N for months.
+   */
+  async enrollTemplates(dto: EnrollTemplatesDto): Promise<EnrollTemplatesResult> {
+    for (const [index, item] of dto.templates.entries()) {
+      assertEnrollmentQa(item.captureQa, index);
+    }
+
+    const results: { templateVersion: number; created: boolean }[] = [];
+    let nextAutoVersion = 1;
+
+    for (const [index, item] of dto.templates.entries()) {
+      const templateVersion = item.templateVersion ?? nextAutoVersion;
+      const upserted = await this.upsertTemplate({
+        workerId: dto.workerId,
+        displayName: index === 0 ? dto.displayName : undefined,
+        modelVersion: dto.modelVersion,
+        templateVersion,
+        embedding: item.embedding,
+      });
+      results.push({
+        templateVersion: upserted.templateVersion,
+        created: upserted.created,
+      });
+      nextAutoVersion = Math.max(nextAutoVersion, upserted.templateVersion + 1);
+    }
+
+    return {
+      workerId: dto.workerId,
+      modelVersion: dto.modelVersion,
+      embeddingDim: FACE_EMBEDDING_DIM,
+      templates: results,
+    };
+  }
+
+  async listTemplates(
+    workerId: string,
+    modelVersion?: string,
+  ): Promise<{ items: ListedTemplate[]; total: number }> {
+    const params: unknown[] = [workerId];
+    let sql = `SELECT worker_id, model_version, template_version, updated_at
+               FROM crewpulse.face_templates
+               WHERE worker_id = $1`;
+    if (modelVersion) {
+      params.push(modelVersion);
+      sql += ` AND model_version = $2`;
+    }
+    sql += ` ORDER BY model_version, template_version`;
+
+    const { rows } = await this.pool.query<{
+      worker_id: string;
+      model_version: string;
+      template_version: number;
+      updated_at: Date;
+    }>(sql, params);
+
+    const items = rows.map((row) => ({
+      workerId: row.worker_id,
+      modelVersion: row.model_version,
+      templateVersion: row.template_version,
+      updatedAt: new Date(row.updated_at).toISOString(),
+    }));
+    return { items, total: items.length };
   }
 
   async upsertRoster(dto: UpsertRosterDto): Promise<UpsertRosterResult> {
